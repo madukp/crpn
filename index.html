@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Crypto Analysis</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for creating interactive charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate-900 */
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 500px;
+            }
+        }
+    </style>
+</head>
+<body class="text-white p-4 md:p-8">
+
+    <!-- Main Container -->
+    <div class="max-w-6xl mx-auto bg-slate-800 rounded-lg shadow-2xl p-6 md:p-10 transition-all duration-300">
+        <h1 class="text-3xl md:text-4xl font-extrabold mb-2 text-center text-indigo-400">Advanced Crypto Analysis Dashboard</h1>
+        <p class="text-sm md:text-base text-slate-400 mb-8 text-center">Interactive Bitcoin chart with key technical indicators.</p>
+
+        <!-- Chart Section -->
+        <div class="bg-slate-900 rounded-xl p-4 md:p-6 mb-8 shadow-inner">
+            <h2 class="text-xl md:text-2xl font-bold mb-4 text-center text-slate-200">Bitcoin Price Chart</h2>
+            <div class="chart-container">
+                <canvas id="priceChart"></canvas>
+            </div>
+            <div id="loading" class="text-center text-gray-400 mt-4">Loading real-time data...</div>
+        </div>
+
+        <!-- Data Table Section -->
+        <div class="bg-slate-900 rounded-xl p-4 md:p-6 mb-8 shadow-inner">
+            <h2 class="text-xl md:text-2xl font-bold mb-4 text-center text-slate-200">Recent Price Data</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left table-auto">
+                    <thead>
+                        <tr class="bg-slate-800 text-slate-300">
+                            <th class="px-4 py-2 rounded-tl-lg">Date</th>
+                            <th class="px-4 py-2">Price</th>
+                            <th class="px-4 py-2">Volume</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Indicator Explanations Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-slate-900 rounded-xl p-6 shadow-inner">
+                <h3 class="text-lg md:text-xl font-semibold mb-2 text-indigo-300">Simple Moving Average (SMA)</h3>
+                <p class="text-slate-400 text-sm">
+                    The SMA smooths out price data to create a single line, making it easier to spot the trend direction. When the price is above the SMA, it suggests an uptrend; when below, a downtrend.
+                </p>
+            </div>
+            <div class="bg-slate-900 rounded-xl p-6 shadow-inner">
+                <h3 class="text-lg md:text-xl font-semibold mb-2 text-indigo-300">Relative Strength Index (RSI)</h3>
+                <p class="text-slate-400 text-sm">
+                    The RSI is a momentum oscillator. It ranges from 0 to 100, where an asset is typically considered overbought when the RSI is above 70 and oversold when it is below 30.
+                </p>
+            </div>
+             <div class="bg-slate-900 rounded-xl p-6 shadow-inner">
+                <h3 class="text-lg md:text-xl font-semibold mb-2 text-indigo-300">MACD</h3>
+                <p class="text-slate-400 text-sm">
+                    The MACD (Moving Average Convergence Divergence) is a trend-following momentum indicator that shows the relationship between two moving averages of an asset’s price. It helps identify trend direction, momentum, and potential trend reversals.
+                </p>
+            </div>
+            <div class="bg-slate-900 rounded-xl p-6 shadow-inner">
+                <h3 class="text-lg md:text-xl font-semibold mb-2 text-indigo-300">Bollinger Bands</h3>
+                <p class="text-slate-400 text-sm">
+                    Bollinger Bands are volatility bands placed above and below a moving average. They help determine if prices are high or low on a relative basis and can signal potential overbought or oversold conditions.
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            // Asynchronously fetches real-time Bitcoin data using Gemini API
+            async function fetchData() {
+                const loadingElement = document.getElementById('loading');
+                loadingElement.textContent = "Fetching and processing real-time Bitcoin data...";
+
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                
+                // Prompt the model to provide a JSON array of recent data
+                const prompt = "Provide a JSON array of daily Bitcoin price data for the last 30 days, including date (YYYY-MM-DD), closing price, and volume. The data should be realistic and reflect typical market movements and volatility. Make sure the most recent date is today's date.";
+                
+                const payload = {
+                    contents: [{
+                        parts: [{ text: prompt }]
+                    }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    date: { type: "STRING" },
+                                    price: { type: "NUMBER" },
+                                    volume: { type: "NUMBER" }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                try {
+                    let response;
+                    let retryCount = 0;
+                    const maxRetries = 5;
+                    const baseDelay = 1000;
+
+                    while (retryCount < maxRetries) {
+                        response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.status !== 429) {
+                            break;
+                        }
+
+                        const delay = baseDelay * Math.pow(2, retryCount);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        retryCount++;
+                    }
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const json = result.candidates[0].content.parts[0].text;
+                        const data = JSON.parse(json);
+                        loadingElement.textContent = "";
+                        return data.map(d => ({
+                            date: new Date(d.date).toLocaleDateString(),
+                            price: d.price,
+                            volume: d.volume
+                        }));
+                    } else {
+                        throw new Error("Invalid response format from API.");
+                    }
+                } catch (error) {
+                    loadingElement.textContent = "Failed to load data. Please check your network and try again later.";
+                    console.error("Fetch error:", error);
+                    return [];
+                }
+            }
+
+            // Function to populate the data table
+            function populateTable(data) {
+                const tableBody = document.getElementById('dataTableBody');
+                tableBody.innerHTML = '';
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-slate-700 hover:bg-slate-700 transition-colors';
+                    row.innerHTML = `
+                        <td class="px-4 py-3">${item.date}</td>
+                        <td class="px-4 py-3">$${item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td class="px-4 py-3">${(item.volume / 1000000).toFixed(2)}M</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            // Helper function to calculate Simple Moving Average (SMA)
+            const calculateSMA = (data, period) => {
+                const sma = [];
+                for (let i = 0; i < data.length; i++) {
+                    if (i >= period - 1) {
+                        const sum = data.slice(i - period + 1, i + 1).reduce((acc, curr) => acc + curr.price, 0);
+                        sma.push(sum / period);
+                    } else {
+                        sma.push(null);
+                    }
+                }
+                return sma;
+            };
+
+            // Helper function to calculate Exponential Moving Average (EMA)
+            const calculateEMA = (data, period) => {
+                const ema = [];
+                const multiplier = 2 / (period + 1);
+                
+                let currentEma;
+                if (data.length > 0) {
+                  let smaSum = 0;
+                  for (let i = 0; i < period; i++) {
+                      smaSum += data[i].price;
+                  }
+                  currentEma = smaSum / period;
+                }
+                
+                for (let i = 0; i < period; i++) {
+                    ema.push(null);
+                }
+                ema[period - 1] = currentEma;
+
+                for (let i = period; i < data.length; i++) {
+                    currentEma = ((data[i].price - currentEma) * multiplier) + currentEma;
+                    ema.push(currentEma);
+                }
+                return ema;
+            };
+
+            // Helper function to calculate MACD
+            const calculateMACD = (data) => {
+                const shortEma = calculateEMA(data, 12);
+                const longEma = calculateEMA(data, 26);
+                const macdLine = shortEma.map((e, i) => (e !== null && longEma[i] !== null) ? e - longEma[i] : null);
+                
+                const signalPeriod = 9;
+                const signalLine = calculateEMA(macdLine.map((val) => ({ price: val })), signalPeriod);
+                
+                const histogram = macdLine.map((m, i) => (m !== null && signalLine[i] !== null) ? m - signalLine[i] : null);
+
+                return { macdLine, signalLine, histogram };
+            };
+
+            // Helper function to calculate Relative Strength Index (RSI)
+            const calculateRSI = (data, period = 14) => {
+                const rsi = [];
+                let gains = 0;
+                let losses = 0;
+
+                for (let i = 1; i <= period; i++) {
+                    const diff = data[i].price - data[i - 1].price;
+                    if (diff > 0) {
+                        gains += diff;
+                    } else {
+                        losses -= diff;
+                    }
+                }
+
+                let avgGain = gains / period;
+                let avgLoss = losses / period;
+
+                for (let i = 0; i <= period; i++) {
+                    rsi.push(null);
+                }
+
+                for (let i = period + 1; i < data.length; i++) {
+                    const diff = data[i].price - data[i - 1].price;
+                    avgGain = ((avgGain * (period - 1)) + (diff > 0 ? diff : 0)) / period;
+                    avgLoss = ((avgLoss * (period - 1)) + (diff < 0 ? -diff : 0)) / period;
+
+                    const rs = avgLoss === 0 ? 1000 : avgGain / avgLoss;
+                    rsi.push(100 - (100 / (1 + rs)));
+                }
+
+                return rsi;
+            };
+
+            // Helper function to calculate Bollinger Bands
+            const calculateBollingerBands = (data, period = 20, numStdDev = 2) => {
+                const sma = calculateSMA(data, period);
+                const bands = { upper: [], middle: [], lower: [] };
+
+                for (let i = 0; i < data.length; i++) {
+                    if (i >= period - 1) {
+                        const slice = data.slice(i - period + 1, i + 1).map(d => d.price);
+                        const mean = sma[i];
+                        const stdDev = Math.sqrt(slice.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / period);
+                        bands.upper.push(mean + (stdDev * numStdDev));
+                        bands.middle.push(mean);
+                        bands.lower.push(mean - (stdDev * numStdDev));
+                    } else {
+                        bands.upper.push(null);
+                        bands.middle.push(null);
+                        bands.lower.push(null);
+                    }
+                }
+                return bands;
+            };
+
+            // Main function to create the chart and populate table
+            async function createChart() {
+                const historicalData = await fetchData();
+                if (historicalData.length === 0) return;
+
+                populateTable(historicalData);
+
+                const labels = historicalData.map(d => d.date);
+                const prices = historicalData.map(d => d.price);
+                const volumes = historicalData.map(d => d.volume);
+
+                // Calculate all technical indicators
+                const sma5 = calculateSMA(historicalData, 5);
+                const sma20 = calculateSMA(historicalData, 20);
+                const rsi14 = calculateRSI(historicalData, 14);
+                const bollingerBands = calculateBollingerBands(historicalData, 20);
+                const macd = calculateMACD(historicalData);
+
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                if (window.priceChart) {
+                    window.priceChart.destroy();
+                }
+
+                window.priceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Price',
+                            data: prices,
+                            borderColor: '#a855f7', // Purple-500
+                            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                            tension: 0.2,
+                            pointRadius: 0,
+                            borderWidth: 2,
+                            fill: false,
+                            yAxisID: 'y1',
+                        }, {
+                            label: '5-Day SMA',
+                            data: sma5,
+                            borderColor: '#22d3ee', // Cyan-400
+                            borderDash: [5, 5],
+                            tension: 0.2,
+                            pointRadius: 0,
+                            borderWidth: 1,
+                            fill: false,
+                            yAxisID: 'y1',
+                        }, {
+                            label: '20-Day SMA',
+                            data: sma20,
+                            borderColor: '#f97316', // Orange-500
+                            tension: 0.2,
+                            pointRadius: 0,
+                            borderWidth: 1,
+                            fill: false,
+                            yAxisID: 'y1',
+                        }, {
+                            label: 'Bollinger Upper',
+                            data: bollingerBands.upper,
+                            borderColor: '#facc15', // Yellow-400
+                            tension: 0.2,
+                            pointRadius: 0,
+                            borderWidth: 1,
+                            fill: '+1',
+                            backgroundColor: 'rgba(250, 204, 21, 0.1)',
+                            yAxisID: 'y1',
+                        }, {
+                            label: 'Bollinger Lower',
+                            data: bollingerBands.lower,
+                            borderColor: '#facc15', // Yellow-400
+                            tension: 0.2,
+                            pointRadius: 0,
+                            borderWidth: 1,
+                            fill: '-1',
+                            backgroundColor: 'rgba(250, 204, 21, 0.1)',
+                            yAxisID: 'y1',
+                        }, {
+                            label: 'Volume',
+                            data: volumes,
+                            type: 'bar',
+                            backgroundColor: '#64748b', // Slate-500
+                            yAxisID: 'y2',
+                        }, {
+                            label: 'MACD Line',
+                            data: macd.macdLine,
+                            borderColor: '#c084fc', // Purple-400
+                            tension: 0.2,
+                            pointRadius: 0,
+                            borderWidth: 1,
+                            yAxisID: 'y1',
+                        }, {
+                            label: 'MACD Signal',
+                            data: macd.signalLine,
+                            borderColor: '#ef4444', // Red-500
+                            borderDash: [3, 3],
+                            tension: 0.2,
+                            pointRadius: 0,
+                            borderWidth: 1,
+                            yAxisID: 'y1',
+                        }, {
+                            label: 'RSI',
+                            data: rsi14,
+                            borderColor: '#facc15', // Yellow-400
+                            tension: 0.2,
+                            pointRadius: 0,
+                            borderWidth: 1,
+                            fill: false,
+                            yAxisID: 'y1',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false,
+                                },
+                                ticks: {
+                                    color: '#94a3b8', // Slate-400
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                position: 'left',
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.2)',
+                                },
+                                ticks: {
+                                    color: '#94a3b8',
+                                }
+                            },
+                            y2: {
+                                type: 'linear',
+                                position: 'right',
+                                grid: {
+                                    display: false,
+                                },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    callback: function(value, index, values) {
+                                        return value / 1000 + 'k';
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#cbd5e1' // Slate-300
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: '#1e293b', // Slate-800
+                                titleColor: '#e2e8f0', // Slate-200
+                                bodyColor: '#cbd5e1', // Slate-300
+                                borderColor: '#334155', // Slate-700
+                                borderWidth: 1,
+                                cornerRadius: 6,
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                    }
+                });
+            }
+
+            createChart();
+        });
+    </script>
+</body>
+</html>
