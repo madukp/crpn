@@ -122,17 +122,16 @@
         }
 
         function EMA(data, period) {
-            let k = 2 / (period + 1),
-                emaArr = [];
-            let sum = 0;
-            for (let i = 0; i < period; i++) {
-                sum += data[i].close;
+            const result = [];
+            const k = 2 / (period + 1);
+            let ema = data[0].close;
+            result.push(ema);
+
+            for (let i = 1; i < data.length; i++) {
+                ema = (data[i].close * k) + (ema * (1 - k));
+                result.push(ema);
             }
-            emaArr.push(sum / period);
-            for (let i = period; i < data.length; i++) {
-                emaArr.push((data[i].close * k) + (emaArr[i - 1] * (1 - k)));
-            }
-            return emaArr;
+            return result;
         }
 
         function MACD(data, short = 12, long = 26, signal = 9) {
@@ -142,12 +141,11 @@
             const signalLine = EMA(macdLine.map((v) => ({ close: v })), signal);
             const hist = macdLine.map((v, i) => v - signalLine[i]);
 
-            return macdLine.map((v, i) => ({
-                time: data[i].time,
-                macd: v,
-                signal: signalLine[i],
-                hist: hist[i]
-            }));
+            return {
+                macd: macdLine.map((v, i) => ({ x: data[i].time, y: v })),
+                signal: signalLine.map((v, i) => ({ x: data[i].time, y: v })),
+                hist: hist.map((v, i) => ({ x: data[i].time, y: v })),
+            };
         }
 
 
@@ -289,7 +287,7 @@
                 if (price) {
                     document.getElementById('ticker').innerText = `$${price.toLocaleString()}`;
                 } else {
-                    document.getElementById('ticker').innerText = `Error loading price �`;
+                    document.getElementById('ticker').innerText = `Error loading price 😢`;
                 }
 
                 const ohlc = await fetchMarketChart(3600, 168); // 168 hours in a week
@@ -339,30 +337,21 @@
                 const macdData = MACD(ohlc);
                 macdChart.data.datasets = [{
                     label: "MACD Line",
-                    data: macdData.map(d => ({
-                        x: d.time,
-                        y: d.macd
-                    })),
+                    data: macdData.macd,
                     type: 'line',
                     borderColor: "lime",
                     fill: false,
                     pointRadius: 0
                 }, {
                     label: "Signal Line",
-                    data: macdData.map(d => ({
-                        x: d.time,
-                        y: d.signal
-                    })),
+                    data: macdData.signal,
                     type: 'line',
                     borderColor: "red",
                     fill: false,
                     pointRadius: 0
                 }, {
                     label: "Histogram",
-                    data: macdData.map(d => ({
-                        x: d.time,
-                        y: d.hist
-                    })),
+                    data: macdData.hist,
                     type: 'bar',
                     backgroundColor: d => d.raw.y > 0 ? 'rgba(50, 205, 50, 0.5)' : 'rgba(255, 69, 0, 0.5)'
                 }];
@@ -380,4 +369,3 @@
     </script>
 </body>
 </html>
-�
