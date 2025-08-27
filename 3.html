@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bitcoin Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background:#111; color:#eee; margin:0; padding:20px; }
+    h1 { text-align:center; }
+    .ticker { font-size:1.4em; text-align:center; margin-bottom:20px; }
+    .charts { display:grid; gap:20px; }
+    canvas { background:#222; border-radius:12px; padding:10px; }
+  </style>
+</head>
+<body>
+  <h1>Bitcoin Live Dashboard</h1>
+  <div class="ticker" id="ticker">Loading price...</div>
+  <div class="charts">
+    <canvas id="priceChart"></canvas>
+    <canvas id="macdChart"></canvas>
+    <canvas id="rsiChart"></canvas>
+  </div>
+
+<script>
+// ---------------- Coinbase API ----------------
+
+// Fetch spot BTC/USD price
+async function fetchSimplePrice() {
+  const res = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot");
+  if (!res.ok) throw new Error("Price fetch failed");
+  const d = await res.json();
+  return { price: parseFloat(d.data.amount) };
+}
+
+// Fetch historical candles (hourly)
+async function fetchMarketChart(granularity=3600, limit=100) {
+  // Coinbase returns: [ time, low, high, open, close, volume ]
+  const res = await fetch(`https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=${granularity}`);
+  if (!res.ok) throw new Error("Candle fetch failed");
+  const raw = await res.json();
+
+  // Coinbase returns newest first, so reverse
+  return raw.slice(0, limit).reverse().map(r => ({
+    time: r[0] * 1000,  // ms timestamp
+    close: r[4]
+  }));
+}
+
+// --- Technical indicators ---
+function SMA(data, period) {
+  return data.map((d,i) => {
+    if (i<period) return null;
+    let sum=0; for (let j=0;j<period;j++) sum+=data[i-j].close;
+    return {x:data[i].time,y:sum/period};
+  });
+}
+
+function RSI(data, period=14) {
+  let gains=[], losses=[];
+  for(let i=1;i<data.length;i++){
+    let diff=data[i].close-data[i-1].close;
+    gains.push(Math.max(0,diff));
+    losses.push(Math.max(0,-diff));
+  }
+  let rsi=[null];
+  for(let i=period;i<gains.length;i++){
+    let avgGain=gains.slice(i-period,i).reduce((a,b)=>a+b,0)/period;
+    let avgLoss=losses.slice(i-period,i).reduce((a,b)=>a+b,0)/period;
+    let rs=avgLoss===0?100:100-(100/(1+avgGain/avgLoss));
+    rsi.push({x:data[i].time,y:rs});
+  }
+  return rsi;
+}
+
+function MACD(data, short=12,long=26,signal=9) {
+  const ema=(period)=>{
+    let k=2/(period+1), emaArr=[];
+    data.forEach((d,i)=>{
+      if(i===0) emaArr.push(d.close);
+      else emaArr.push(d.close*k+emaArr[i-1]*(1-k));
+    });
+    return emaArr;
+  };
+  const emaShort=ema(short), emaLong=ema(long);
+  const macdLine=emaShort.map((v,i)=>v-emaLong[i]);
+  const signalLine=[];
+  macdLine.forEach((v,i)=>{
+    if(i===0) signalLine.push(v);
+    else signalLine.push(v*(2/(signal+1))+signalLine[i-1]*(1-2/(signal+1)));
+  });
+  const hist=macdLine.map((v,i)=>v-signalLine[i]);
+  return macdLine.map((v,i)=>({time:data[i].time,macd:v,signal:signalLine[i],hist:hist[i]}));
+}
+
+// --- Charts ---
+const priceCtx=document.getElementById('priceChart').getContext('2d');
+const macdCtx=document.getElementById('macdChart').getContext('2d');
+const rsiCtx=document.getElementById('rsiChart').getContext('2d');
+
+let priceChart=new Chart(priceCtx,{type:'line',data:{datasets:[]},options:{
+  responsive:true,
+  plugins:{legend:{labels:{color:'#fff'}}},
+  scales:{x:{type:'time',ticks:{color:'#fff'}},y:{ticks:{color:'#fff'}}}
+}});
+
+let macdChart=new Chart(macdCtx,{type:'line',data:{datasets:[]},options:{
+  plugins:{legend:{labels:{color:'#fff'}}},
+  scales:{x:{type:'time',ticks:{color:'#fff'}},y:{ticks:{color:'#fff'}}}
+}});
+
+let rsiChart=new Chart(rsiCtx,{type:'line',data:{datasets:[]},options:{
+  plugins:{legend:{labels:{color:'#fff'}}},
+  scales:{x:{type:'time',ticks:{color:'#fff'}},y:{min:0,max:100,ticks:{color:'#fff'}}}
+}});
+
+async function updateCharts(){
+  try {
+    const {price}=await fetchSimplePrice();
+    document.getElementById('ticker').innerText=`BTC $${price.toLocaleString()}`;
+
+    const ohlc=await fetchMarketChart(3600,100); // hourly
+
+    // Price + SMA
+    const sma20=SMA(ohlc,20).filter(x=>x);
+    const sma50=SMA(ohlc,50).filter(x=>x);
+    priceChart.data.datasets=[
+      {label:"Price",data:ohlc.map(d=>({x:d.time,y:d.close})),borderColor:"orange",fill:false},
+      {label:"SMA20",data:sma20,borderColor:"cyan",fill:false},
+      {label:"SMA50",data:sma50,borderColor:"magenta",fill:false}
+    ];
+    priceChart.update();
+
+    // MACD
+    const macdData=MACD(ohlc);
+    macdChart.data.datasets=[
+      {label:"MACD",data:macdData.map(d=>({x:d.time,y:d.macd})),borderColor:"lime"},
+      {label:"Signal",data:macdData.map(d=>({x:d.time,y:d.signal})),borderColor:"red"},
+      {label:"Histogram",data:macdData.map(d=>({x:d.time,y:d.hist})),type:'bar',backgroundColor:"blue"}
+    ];
+    macdChart.update();
+
+    // RSI
+    const rsiData=RSI(ohlc);
+    rsiChart.data.datasets=[{label:"RSI",data:rsiData.filter(x=>x).map(d=>({x:d.x,y:d.y})),borderColor:"yellow"}];
+    rsiChart.update();
+
+  } catch(e){
+    document.getElementById('ticker').innerText="Error loading data 😢";
+    console.error(e);
+  }
+}
+
+updateCharts();
+setInterval(updateCharts,180000); // refresh every 3 mins
+</script>
+</body>
+</html>
