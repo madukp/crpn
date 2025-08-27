@@ -41,6 +41,9 @@
                 <div class="chart-container">
                     <canvas id="priceChart"></canvas>
                 </div>
+                <div id="smaAnalysis" class="mt-4 text-center text-lg font-semibold">
+                    Analyzing SMA trend...
+                </div>
             </div>
 
             <div class="bg-slate-900 rounded-xl p-4 md:p-6 shadow-inner">
@@ -48,12 +51,18 @@
                 <div class="chart-container">
                     <canvas id="rsiChart"></canvas>
                 </div>
+                <div id="rsiAnalysis" class="mt-4 text-center text-lg font-semibold">
+                    Analyzing RSI status...
+                </div>
             </div>
 
             <div class="lg:col-span-2 bg-slate-900 rounded-xl p-4 md:p-6 shadow-inner">
                 <h2 class="text-xl md:text-2xl font-bold mb-4 text-center text-slate-200">MACD Indicator</h2>
                 <div class="chart-container">
                     <canvas id="macdChart"></canvas>
+                </div>
+                <div id="macdAnalysis" class="mt-4 text-center text-lg font-semibold">
+                    Analyzing MACD signal...
                 </div>
             </div>
         </div>
@@ -86,7 +95,11 @@
                 // Coinbase returns newest first, so reverse to get chronological order
                 return raw.slice(0, limit).reverse().map(r => ({
                     time: r[0] * 1000, // Convert to milliseconds timestamp
-                    close: parseFloat(r[4])
+                    low: parseFloat(r[1]),
+                    high: parseFloat(r[2]),
+                    open: parseFloat(r[3]),
+                    close: parseFloat(r[4]),
+                    volume: parseFloat(r[5])
                 }));
             } catch (e) {
                 console.error("Error fetching market chart:", e);
@@ -97,7 +110,7 @@
         // --- Technical indicators ---
         function SMA(data, period) {
             return data.map((d, i) => {
-                if (i < period) return null;
+                if (i < period - 1) return null;
                 let sum = 0;
                 for (let j = 0; j < period; j++) sum += data[i - j].close;
                 return { x: data[i].time, y: sum / period };
@@ -167,6 +180,26 @@
                         labels: {
                             color: '#e2e8f0'
                         }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                if (context.dataset.label === 'Price') {
+                                    const rawData = context.raw;
+                                    const open = rawData.open.toLocaleString();
+                                    const high = rawData.high.toLocaleString();
+                                    const low = rawData.low.toLocaleString();
+                                    const close = rawData.close.toLocaleString();
+                                    return [
+                                        `Open: $${open}`,
+                                        `High: $${high}`,
+                                        `Low: $${low}`,
+                                        `Close: $${close}`
+                                    ];
+                                }
+                                return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -230,7 +263,9 @@
                         },
                         grid: {
                             color: 'rgba(148, 163, 184, 0.1)'
-                        }
+                        },
+                        beginAtZero: true,
+                        zeroLineColor: 'rgba(255, 255, 255, 0.5)'
                     }
                 }
             }
@@ -302,14 +337,18 @@
                     label: "Price",
                     data: ohlc.map(d => ({
                         x: d.time,
-                        y: d.close
+                        y: [d.low, d.high],
+                        open: d.open,
+                        close: d.close
                     })),
-                    borderColor: "orange",
-                    fill: false,
-                    pointRadius: 0
+                    type: 'bar',
+                    borderColor: d => d.raw.close > d.raw.open ? '#22c55e' : '#ef4444', // Green for up, red for down
+                    backgroundColor: d => d.raw.close > d.raw.open ? '#22c55e' : '#ef4444',
+                    borderWidth: 1
                 }, {
                     label: "SMA20",
                     data: sma20,
+                    type: 'line',
                     borderColor: "cyan",
                     fill: false,
                     pointRadius: 0,
@@ -317,12 +356,31 @@
                 }, {
                     label: "SMA50",
                     data: sma50,
+                    type: 'line',
                     borderColor: "magenta",
                     fill: false,
                     pointRadius: 0,
                     borderDash: [5, 5]
                 }];
                 priceChart.update();
+
+                // --- PRICE & SMA Analysis ---
+                const smaAnalysisEl = document.getElementById('smaAnalysis');
+                const latestSma20 = sma20[sma20.length - 1]?.y;
+                const latestSma50 = sma50[sma50.length - 1]?.y;
+                if (latestSma20 > latestSma50) {
+                    smaAnalysisEl.innerText = "Trend Analysis: The 20-hour SMA is above the 50-hour SMA, indicating a short-term BULLISH trend. �";
+                    smaAnalysisEl.classList.remove('text-red-500', 'text-yellow-500');
+                    smaAnalysisEl.classList.add('text-green-500');
+                } else if (latestSma20 < latestSma50) {
+                    smaAnalysisEl.innerText = "Trend Analysis: The 20-hour SMA is below the 50-hour SMA, indicating a short-term BEARISH trend. 🔻";
+                    smaAnalysisEl.classList.remove('text-green-500', 'text-yellow-500');
+                    smaAnalysisEl.classList.add('text-red-500');
+                } else {
+                    smaAnalysisEl.innerText = "Trend Analysis: The SMAs are consolidating, indicating a NEUTRAL trend. ⏸️";
+                    smaAnalysisEl.classList.remove('text-green-500', 'text-red-500');
+                    smaAnalysisEl.classList.add('text-yellow-500');
+                }
 
                 const rsiData = RSI(ohlc);
                 rsiChart.data.datasets = [{
@@ -331,9 +389,44 @@
                     borderColor: "yellow",
                     fill: false,
                     pointRadius: 0
+                }, {
+                    label: "Overbought (70)",
+                    data: rsiData.map(() => 70),
+                    borderColor: '#f87171',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                    borderDash: [5, 5]
+                }, {
+                    label: "Oversold (30)",
+                    data: rsiData.map(() => 30),
+                    borderColor: '#34d399',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                    borderDash: [5, 5]
                 }];
                 rsiChart.update();
-                
+
+                // --- RSI Analysis ---
+                const rsiAnalysisEl = document.getElementById('rsiAnalysis');
+                const latestRsi = rsiData[rsiData.length - 1]?.y;
+                if (latestRsi) {
+                    if (latestRsi > 70) {
+                        rsiAnalysisEl.innerText = "RSI Analysis: The market is currently OVERBOUGHT. A reversal may be imminent. ⚠️";
+                        rsiAnalysisEl.classList.remove('text-green-500', 'text-yellow-500');
+                        rsiAnalysisEl.classList.add('text-red-500');
+                    } else if (latestRsi < 30) {
+                        rsiAnalysisEl.innerText = "RSI Analysis: The market is currently OVERSOLD. A bounce may be imminent. 📈";
+                        rsiAnalysisEl.classList.remove('text-red-500', 'text-yellow-500');
+                        rsiAnalysisEl.classList.add('text-green-500');
+                    } else {
+                        rsiAnalysisEl.innerText = "RSI Analysis: The market is in NEUTRAL territory. No clear momentum signal. ⏸️";
+                        rsiAnalysisEl.classList.remove('text-red-500', 'text-green-500');
+                        rsiAnalysisEl.classList.add('text-yellow-500');
+                    }
+                }
+
                 const macdData = MACD(ohlc);
                 macdChart.data.datasets = [{
                     label: "MACD Line",
@@ -357,6 +450,25 @@
                 }];
                 macdChart.update();
 
+                const macdAnalysisEl = document.getElementById('macdAnalysis');
+                const latestMacd = macdData.macd[macdData.macd.length - 1];
+                const latestSignal = macdData.signal[macdData.signal.length - 1];
+                
+                if (latestMacd && latestSignal) {
+                    if (latestMacd.y > latestSignal.y) {
+                        macdAnalysisEl.innerText = "Current Signal: Bullish Crossover - The MACD line is above the Signal line, indicating upward momentum. 🚀";
+                        macdAnalysisEl.classList.remove('text-red-500');
+                        macdAnalysisEl.classList.add('text-green-500');
+                    } else if (latestMacd.y < latestSignal.y) {
+                        macdAnalysisEl.innerText = "Current Signal: Bearish Crossover - The MACD line is below the Signal line, indicating downward momentum. 🔻";
+                        macdAnalysisEl.classList.remove('text-green-500');
+                        macdAnalysisEl.classList.add('text-red-500');
+                    } else {
+                        macdAnalysisEl.innerText = "Current Signal: Neutral - The MACD and Signal lines are close, indicating a period of consolidation. ⏸️";
+                        macdAnalysisEl.classList.remove('text-green-500', 'text-red-500');
+                        macdAnalysisEl.classList.add('text-yellow-500');
+                    }
+                }
 
             } catch (e) {
                 console.error("Error loading data:", e);
@@ -369,3 +481,4 @@
     </script>
 </body>
 </html>
+�
