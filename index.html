@@ -1,153 +1,383 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bitcoin Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-  <style>
-    body { font-family: Arial, sans-serif; background:#111; color:#eee; margin:0; padding:20px; }
-    h1 { text-align:center; }
-    .ticker { font-size:1.4em; text-align:center; margin-bottom:20px; }
-    .charts { display:grid; gap:20px; }
-    canvas { background:#222; border-radius:12px; padding:10px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Bitcoin Dashboard</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js and its date-fns adapter for charting -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate-900 */
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 500px;
+            }
+        }
+    </style>
 </head>
-<body>
-  <h1>Bitcoin Live Dashboard</h1>
-  <div class="ticker" id="ticker">Loading price...</div>
-  <div class="charts">
-    <canvas id="priceChart"></canvas>
-    <canvas id="macdChart"></canvas>
-    <canvas id="rsiChart"></canvas>
-  </div>
+<body class="text-white p-4 md:p-8">
 
-<script>
-const proxy = "https://api.allorigins.win/raw?url=";
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto bg-slate-800 rounded-lg shadow-2xl p-6 md:p-10 transition-all duration-300">
+        <h1 class="text-3xl md:text-4xl font-extrabold mb-2 text-center text-indigo-400">Bitcoin Live Dashboard</h1>
+        <div class="text-center font-bold text-5xl md:text-6xl text-lime-400 my-8">
+            <span id="ticker">Loading price...</span>
+        </div>
 
-// Fetch simple BTC price
-async function fetchSimplePrice() {
-  const url = proxy + encodeURIComponent("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT");
-  const res = await fetch(url);
-  const d = await res.json();
-  return { price: +d.lastPrice, change: +d.priceChangePercent };
-}
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-slate-900 rounded-xl p-4 md:p-6 shadow-inner">
+                <h2 class="text-xl md:text-2xl font-bold mb-4 text-center text-slate-200">Price & SMA</h2>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
 
-// Fetch OHLC data for BTC
-async function fetchMarketChart(interval="1h", limit=100) {
-  const url = proxy + encodeURIComponent(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=${limit}`);
-  const res = await fetch(url);
-  const raw = await res.json();
-  return raw.map(r => ({ time:+r[0], close:parseFloat(r[4]) }));
-}
+            <div class="bg-slate-900 rounded-xl p-4 md:p-6 shadow-inner">
+                <h2 class="text-xl md:text-2xl font-bold mb-4 text-center text-slate-200">RSI Indicator</h2>
+                <div class="chart-container">
+                    <canvas id="rsiChart"></canvas>
+                </div>
+            </div>
 
-// --- Technical indicators ---
-function SMA(data, period) {
-  return data.map((d,i) => {
-    if (i<period) return null;
-    let sum=0; for (let j=0;j<period;j++) sum+=data[i-j].close;
-    return {x:data[i].time,y:sum/period};
-  });
-}
+            <div class="lg:col-span-2 bg-slate-900 rounded-xl p-4 md:p-6 shadow-inner">
+                <h2 class="text-xl md:text-2xl font-bold mb-4 text-center text-slate-200">MACD Indicator</h2>
+                <div class="chart-container">
+                    <canvas id="macdChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 
-function RSI(data, period=14) {
-  let gains=[], losses=[];
-  for(let i=1;i<data.length;i++){
-    let diff=data[i].close-data[i-1].close;
-    gains.push(Math.max(0,diff));
-    losses.push(Math.max(0,-diff));
-  }
-  let rsi=[null];
-  for(let i=period;i<gains.length;i++){
-    let avgGain=gains.slice(i-period,i).reduce((a,b)=>a+b,0)/period;
-    let avgLoss=losses.slice(i-period,i).reduce((a,b)=>a+b,0)/period;
-    let rs=avgLoss===0?100:100-(100/(1+avgGain/avgLoss));
-    rsi.push({x:data[i].time,y:rs});
-  }
-  return rsi;
-}
+    <script>
+        // ---------------- Coinbase API ----------------
 
-function MACD(data, short=12,long=26,signal=9) {
-  const ema=(period)=>{
-    let k=2/(period+1), emaArr=[];
-    data.forEach((d,i)=>{
-      if(i===0) emaArr.push(d.close);
-      else emaArr.push(d.close*k+emaArr[i-1]*(1-k));
-    });
-    return emaArr;
-  };
-  const emaShort=ema(short), emaLong=ema(long);
-  const macdLine=emaShort.map((v,i)=>v-emaLong[i]);
-  const signalLine=[];
-  macdLine.forEach((v,i)=>{
-    if(i===0) signalLine.push(v);
-    else signalLine.push(v*(2/(signal+1))+signalLine[i-1]*(1-2/(signal+1)));
-  });
-  const hist=macdLine.map((v,i)=>v-signalLine[i]);
-  return macdLine.map((v,i)=>({time:data[i].time,macd:v,signal:signalLine[i],hist:hist[i]}));
-}
+        // Fetch spot BTC/USD price
+        async function fetchSimplePrice() {
+            try {
+                const res = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot");
+                if (!res.ok) throw new Error("Price fetch failed");
+                const d = await res.json();
+                return { price: parseFloat(d.data.amount) };
+            } catch (e) {
+                console.error("Error fetching simple price:", e);
+                return { price: null };
+            }
+        }
 
-// --- Charts ---
-const priceCtx=document.getElementById('priceChart').getContext('2d');
-const macdCtx=document.getElementById('macdChart').getContext('2d');
-const rsiCtx=document.getElementById('rsiChart').getContext('2d');
+        // Fetch historical candles (hourly) for one week
+        async function fetchMarketChart(granularity = 3600, limit = 168) { // 168 hours in a week
+            try {
+                // Using the Coinbase Exchange API endpoint
+                const res = await fetch(`https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=${granularity}`);
+                if (!res.ok) throw new Error("Candle fetch failed");
+                const raw = await res.json();
 
-let priceChart=new Chart(priceCtx,{type:'line',data:{datasets:[]},options:{
-  responsive:true,
-  plugins:{legend:{labels:{color:'#fff'}}},
-  scales:{x:{type:'time',ticks:{color:'#fff'}},y:{ticks:{color:'#fff'}}}
-}});
+                // Coinbase returns newest first, so reverse to get chronological order
+                return raw.slice(0, limit).reverse().map(r => ({
+                    time: r[0] * 1000, // Convert to milliseconds timestamp
+                    close: parseFloat(r[4])
+                }));
+            } catch (e) {
+                console.error("Error fetching market chart:", e);
+                return [];
+            }
+        }
 
-let macdChart=new Chart(macdCtx,{type:'line',data:{datasets:[]},options:{
-  plugins:{legend:{labels:{color:'#fff'}}},
-  scales:{x:{type:'time',ticks:{color:'#fff'}},y:{ticks:{color:'#fff'}}}
-}});
+        // --- Technical indicators ---
+        function SMA(data, period) {
+            return data.map((d, i) => {
+                if (i < period) return null;
+                let sum = 0;
+                for (let j = 0; j < period; j++) sum += data[i - j].close;
+                return { x: data[i].time, y: sum / period };
+            }).filter(x => x !== null);
+        }
 
-let rsiChart=new Chart(rsiCtx,{type:'line',data:{datasets:[]},options:{
-  plugins:{legend:{labels:{color:'#fff'}}},
-  scales:{x:{type:'time',ticks:{color:'#fff'}},y:{min:0,max:100,ticks:{color:'#fff'}}}
-}});
+        function RSI(data, period = 14) {
+            let gains = [], losses = [];
+            for (let i = 1; i < data.length; i++) {
+                let diff = data[i].close - data[i - 1].close;
+                gains.push(Math.max(0, diff));
+                losses.push(Math.max(0, -diff));
+            }
+            let rsi = [];
+            for (let i = period - 1; i < gains.length; i++) {
+                let avgGain = gains.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+                let avgLoss = losses.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+                let rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+                rsi.push({ x: data[i + 1].time, y: 100 - (100 / (1 + rs)) });
+            }
+            return rsi;
+        }
 
-async function updateCharts(){
-  try {
-    const {price,change}=await fetchSimplePrice();
-    document.getElementById('ticker').innerText=`BTC $${price.toLocaleString()} (${change.toFixed(2)}%)`;
+        function EMA(data, period) {
+            let k = 2 / (period + 1),
+                emaArr = [];
+            let sum = 0;
+            for (let i = 0; i < period; i++) {
+                sum += data[i].close;
+            }
+            emaArr.push(sum / period);
+            for (let i = period; i < data.length; i++) {
+                emaArr.push((data[i].close * k) + (emaArr[i - 1] * (1 - k)));
+            }
+            return emaArr;
+        }
 
-    const ohlc=await fetchMarketChart("1h",100);
+        function MACD(data, short = 12, long = 26, signal = 9) {
+            const emaShort = EMA(data, short);
+            const emaLong = EMA(data, long);
+            const macdLine = emaShort.map((v, i) => v - emaLong[i]);
+            const signalLine = EMA(macdLine.map((v) => ({ close: v })), signal);
+            const hist = macdLine.map((v, i) => v - signalLine[i]);
 
-    // Price + SMA
-    const sma20=SMA(ohlc,20).filter(x=>x);
-    const sma50=SMA(ohlc,50).filter(x=>x);
-    priceChart.data.datasets=[
-      {label:"Price",data:ohlc.map(d=>({x:d.time,y:d.close})),borderColor:"orange",fill:false},
-      {label:"SMA20",data:sma20,borderColor:"cyan",fill:false},
-      {label:"SMA50",data:sma50,borderColor:"magenta",fill:false}
-    ];
-    priceChart.update();
+            return macdLine.map((v, i) => ({
+                time: data[i].time,
+                macd: v,
+                signal: signalLine[i],
+                hist: hist[i]
+            }));
+        }
 
-    // MACD
-    const macdData=MACD(ohlc);
-    macdChart.data.datasets=[
-      {label:"MACD",data:macdData.map(d=>({x:d.time,y:d.macd})),borderColor:"lime"},
-      {label:"Signal",data:macdData.map(d=>({x:d.time,y:d.signal})),borderColor:"red"},
-      {label:"Histogram",data:macdData.map(d=>({x:d.time,y:d.hist})),type:'bar',backgroundColor:"blue"}
-    ];
-    macdChart.update();
 
-    // RSI
-    const rsiData=RSI(ohlc);
-    rsiChart.data.datasets=[{label:"RSI",data:rsiData.filter(x=>x).map(d=>({x:d.x,y:d.y})),borderColor:"yellow"}];
-    rsiChart.update();
+        // --- Charts ---
+        const priceCtx = document.getElementById('priceChart').getContext('2d');
+        const macdCtx = document.getElementById('macdChart').getContext('2d');
+        const rsiCtx = document.getElementById('rsiChart').getContext('2d');
 
-  } catch(e){
-    document.getElementById('ticker').innerText="Error loading data 😢";
-    console.error(e);
-  }
-}
+        let priceChart = new Chart(priceCtx, {
+            type: 'line',
+            data: {
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#e2e8f0'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            tooltipFormat: 'MMM d, h:mm a'
+                        },
+                        ticks: {
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.1)'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
 
-updateCharts();
-setInterval(updateCharts,180000); // refresh every 3 mins
-</script>
+        let macdChart = new Chart(macdCtx, {
+            type: 'bar',
+            data: {
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#e2e8f0'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            tooltipFormat: 'MMM d, h:mm a'
+                        },
+                        ticks: {
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.1)'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+
+        let rsiChart = new Chart(rsiCtx, {
+            type: 'line',
+            data: {
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#e2e8f0'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            tooltipFormat: 'MMM d, h:mm a'
+                        },
+                        ticks: {
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.1)'
+                        }
+                    },
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+
+        async function updateCharts() {
+            try {
+                const {
+                    price
+                } = await fetchSimplePrice();
+                if (price) {
+                    document.getElementById('ticker').innerText = `$${price.toLocaleString()}`;
+                } else {
+                    document.getElementById('ticker').innerText = `Error loading price �`;
+                }
+
+                const ohlc = await fetchMarketChart(3600, 168); // 168 hours in a week
+                if (ohlc.length === 0) {
+                    throw new Error("No data fetched from API.");
+                }
+
+                const sma20 = SMA(ohlc, 20);
+                const sma50 = SMA(ohlc, 50);
+
+                priceChart.data.datasets = [{
+                    label: "Price",
+                    data: ohlc.map(d => ({
+                        x: d.time,
+                        y: d.close
+                    })),
+                    borderColor: "orange",
+                    fill: false,
+                    pointRadius: 0
+                }, {
+                    label: "SMA20",
+                    data: sma20,
+                    borderColor: "cyan",
+                    fill: false,
+                    pointRadius: 0,
+                    borderDash: [5, 5]
+                }, {
+                    label: "SMA50",
+                    data: sma50,
+                    borderColor: "magenta",
+                    fill: false,
+                    pointRadius: 0,
+                    borderDash: [5, 5]
+                }];
+                priceChart.update();
+
+                const rsiData = RSI(ohlc);
+                rsiChart.data.datasets = [{
+                    label: "RSI",
+                    data: rsiData,
+                    borderColor: "yellow",
+                    fill: false,
+                    pointRadius: 0
+                }];
+                rsiChart.update();
+                
+                const macdData = MACD(ohlc);
+                macdChart.data.datasets = [{
+                    label: "MACD Line",
+                    data: macdData.map(d => ({
+                        x: d.time,
+                        y: d.macd
+                    })),
+                    type: 'line',
+                    borderColor: "lime",
+                    fill: false,
+                    pointRadius: 0
+                }, {
+                    label: "Signal Line",
+                    data: macdData.map(d => ({
+                        x: d.time,
+                        y: d.signal
+                    })),
+                    type: 'line',
+                    borderColor: "red",
+                    fill: false,
+                    pointRadius: 0
+                }, {
+                    label: "Histogram",
+                    data: macdData.map(d => ({
+                        x: d.time,
+                        y: d.hist
+                    })),
+                    type: 'bar',
+                    backgroundColor: d => d.raw.y > 0 ? 'rgba(50, 205, 50, 0.5)' : 'rgba(255, 69, 0, 0.5)'
+                }];
+                macdChart.update();
+
+
+            } catch (e) {
+                console.error("Error loading data:", e);
+                document.getElementById('ticker').innerText = "Error loading data 😢";
+            }
+        }
+
+        updateCharts();
+        setInterval(updateCharts, 180000); // Refresh every 3 minutes
+    </script>
 </body>
 </html>
+�
