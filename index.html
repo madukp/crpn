@@ -1,157 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bitcoin Live — Price, SMA, RSI & MACD</title>
-  <meta name="description" content="Live Bitcoin dashboard with price chart, SMA(20/50), RSI(14), and MACD(12,26,9). Built for GitHub Pages in a single HTML file." />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <style>
-    :root{--bg:#0b0f14;--panel:#121823;--panel2:#0f141c;--text:#e8eef6;--muted:#9bb0c3;--accent:#2fb67c;--danger:#ff5c5c}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;color:var(--text);background:linear-gradient(180deg,var(--bg),#0a0e13 40%,#0a0d12)}
-    header{position:sticky;top:0;z-index:5;background:rgba(15,20,28,.7);backdrop-filter:blur(10px);border-bottom:1px solid #1c2633}
-    .wrap{max-width:1100px;margin:0 auto;padding:18px}
-    h1{font-size:22px;margin:0}
-    .row{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #213042;border-radius:999px;background:var(--panel)}
-    .price{font-size:28px;font-weight:700}
-    .chg{font-weight:700}
-    .grid{display:grid;grid-template-columns:1fr;gap:16px;margin:16px auto}
-    @media(min-width:900px){.grid{grid-template-columns: 1.3fr .7fr}}
-    .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid #1b2736;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-    .card h2{margin:0 0 8px 0;font-size:16px;color:#cfe2f7}
-    .card .body{padding:16px}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
-    button,select{background:#152131;color:var(--text);border:1px solid #243244;border-radius:10px;padding:8px 12px;cursor:pointer}
-    button.active{outline:2px solid #2fb67c}
-    .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
-    .legend span{display:inline-flex;align-items:center;gap:6px}
-    .dot{width:10px;height:10px;border-radius:50%}
-    footer{color:var(--muted);font-size:12px;opacity:.85}
-    a{color:#90caf9}
-    .small{font-size:12px;color:var(--muted)}
-    .err{color:var(--danger);font-weight:600}
-  </style>
-</head>
-<body>
-  <header>
-    <div class="wrap row">
-      <h1>Bitcoin Live — Price, SMA, RSI & MACD</h1>
-      <div class="pill" id="tickerBox">
-        <span>BTC/USD</span>
-        <span class="price" id="livePrice">—</span>
-        <span id="liveChg" class="chg">—</span>
-      </div>
-      <div class="pill small" id="lastUpdated">Updated: —</div>
-    </div>
-  </header>
+// ---------------- Data fetch (Binance via CORS proxy) -----------------
+const proxy = "https://api.allorigins.win/raw?url=";
 
-  <main class="wrap">
-    <div class="grid">
-      <section class="card">
-        <div class="body">
-          <div class="row toolbar" id="rangeBtns">
-            <button data-days="1" class="active">1D</button>
-            <button data-days="7">7D</button>
-            <button data-days="30">30D</button>
-            <button data-days="90">90D</button>
-            <button data-days="180">180D</button>
-            <button data-days="365">1Y</button>
-            <select id="intervalSelect" title="Chart interval">
-              <option value="hourly">Hourly</option>
-              <option value="daily">Daily</option>
-            </select>
-          </div>
-          <div class="legend" style="margin:8px 0 10px 0">
-            <span><span class="dot" style="background:#42a5f5"></span>Close</span>
-            <span><span class="dot" style="background:#66bb6a"></span>SMA 20</span>
-            <span><span class="dot" style="background:#ab47bc"></span>SMA 50</span>
-          </div>
-          <canvas id="priceChart" height="340"></canvas>
-        </div>
-      </section>
-      <aside class="card">
-        <div class="body">
-          <h2>Technical Snapshot</h2>
-          <div id="techBox" class="small">Loading…</div>
-        </div>
-      </aside>
-    </div>
-
-    <section class="card">
-      <div class="body">
-        <h2>MACD (12, 26, 9)</h2>
-        <canvas id="macdChart" height="220"></canvas>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="body">
-        <h2>RSI (14)</h2>
-        <canvas id="rsiChart" height="220"></canvas>
-      </div>
-    </section>
-
-    <p class="small">Data source: Binance public API (fallback from CoinGecko). Times are approximate and may be delayed. This is not financial advice.</p>
-    <footer class="wrap small">Open-source single-file dashboard. You can host this as <strong>index.html</strong> on GitHub Pages.</footer>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script>
-  // ---------------- Utility functions ----------------
-  function ema(values, period){const k=2/(period+1);let arr=Array(values.length).fill(null);let sma=0;for(let i=0;i<period;i++)sma+=values[i];sma/=period;arr[period-1]=sma;for(let i=period;i<values.length;i++){arr[i]=values[i]*k+arr[i-1]*(1-k)}return arr;}
-  function sma(values, period){const out=Array(values.length).fill(null);let sum=0;for(let i=0;i<values.length;i++){sum+=values[i];if(i>=period)sum-=values[i-period];if(i>=period-1)out[i]=sum/period;}return out;}
-  function rsi(values, period=14){const out=Array(values.length).fill(null);let gains=0,losses=0;for(let i=1;i<=period;i++){const ch=values[i]-values[i-1];if(ch>=0)gains+=ch;else losses-=ch;}let avgGain=gains/period,avgLoss=losses/period;out[period]=100-(100/(1+(avgGain/(avgLoss||1e-9))));for(let i=period+1;i<values.length;i++){const ch=values[i]-values[i-1];const gain=Math.max(ch,0),loss=Math.max(-ch,0);avgGain=(avgGain*(period-1)+gain)/period;avgLoss=(avgLoss*(period-1)+loss)/period;const rs=avgGain/(avgLoss||1e-9);out[i]=100-(100/(1+rs));}return out;}
-  function computeMACD(values, fast=12, slow=26, signal=9){const emaFast=ema(values,fast), emaSlow=ema(values,slow);const macd=values.map((_,i)=>(emaFast[i]!=null&&emaSlow[i]!=null)?emaFast[i]-emaSlow[i]:null);const signalLine=ema(macd.map(v=>v==null?0:v),signal).map((v,i)=>macd[i]==null?null:v);const hist=macd.map((v,i)=>(v!=null&&signalLine[i]!=null)?v-signalLine[i]:null);return {macd,signal:signalLine,hist};}
-
-  // --------------- Data fetch (Binance fallback) -----------------
-  async function fetchMarketChart(days=1, interval='1h'){
-    let limit=100;
-    if(interval==='1d'){limit=Math.min(days,500)}
-    const url=`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=${limit}`;
-    const res=await fetch(url);
-    if(!res.ok) throw new Error('Failed to fetch Binance data');
-    const raw=await res.json();
-    const prices=raw.map(r=>[+r[0],parseFloat(r[4])]);
-    return {prices};
-  }
-  async function fetchSimplePrice(){
-    const url='https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT';
-    const res=await fetch(url);
-    if(!res.ok) throw new Error('Failed to fetch Binance spot');
-    const d=await res.json();
-    return {price:+d.lastPrice, change:+d.priceChangePercent};
+async function fetchMarketChart(days = 1, interval = '1h') {
+  let limit = 100;
+  if (interval === '1d') {
+    limit = Math.min(days, 500);
   }
 
-  // --------------- Charts -----------------
-  let priceChart,macdChart,rsiChart;
-  function renderPriceChart(labels,closes){const ctx=document.getElementById('priceChart');const sma20=sma(closes,20),sma50=sma(closes,50);const data={labels,datasets:[{label:'Close',data:closes,borderColor:'#42a5f5',backgroundColor:'rgba(66,165,245,.15)',fill:true,pointRadius:0,tension:.2,borderWidth:2},{label:'SMA 20',data:sma20,borderColor:'#66bb6a',pointRadius:0,tension:.2,borderWidth:1.6},{label:'SMA 50',data:sma50,borderColor:'#ab47bc',pointRadius:0,tension:.2,borderWidth:1.6}]};const options={responsive:true,maintainAspectRatio:false,scales:{x:{grid:{color:'rgba(255,255,255,.03)'}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{callback:(v)=>'$'+Intl.NumberFormat('en-US').format(v)}}},plugins:{legend:{labels:{color:'#cfe2f7'}},tooltip:{mode:'index',intersect:false,callbacks:{label:(ctx)=> `${ctx.dataset.label}: $${ctx.formattedValue}`}}}};priceChart?.destroy();priceChart=new Chart(ctx,{type:'line',data,options});}
-  function renderMACD(labels,closes){const {macd,signal,hist}=computeMACD(closes,12,26,9);const ctx=document.getElementById('macdChart');macdChart?.destroy();macdChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{type:'bar',label:'Histogram',data:hist,backgroundColor:(ctx)=> (ctx.raw>=0?'rgba(47,182,124,.6)':'rgba(255,92,92,.6)')},{type:'line',label:'MACD',data:macd,borderColor:'#ffd166',pointRadius:0,tension:.2,borderWidth:1.5},{type:'line',label:'Signal',data:signal,borderColor:'#90caf9',pointRadius:0,tension:.2,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{color:'rgba(255,255,255,.03)'}},y:{grid:{color:'rgba(255,255,255,.05)'}}},plugins:{legend:{labels:{color:'#cfe2f7'}}}});}
-  function renderRSI(labels,closes){const r=rsi(closes,14);const ctx=document.getElementById('rsiChart');rsiChart?.destroy();rsiChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'RSI 14',data:r,borderColor:'#f48fb1',pointRadius:0,tension:.2,borderWidth:1.8}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{color:'rgba(255,255,255,.03)'}},y:{min:0,max:100,grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#cfe2f7'}}},plugins:{legend:{labels:{color:'#cfe2f7'}}}});}
-  function setTechBox(latestClose,closes){const sma20Arr=sma(closes,20),sma50Arr=sma(closes,50);const lastSMA20=sma20Arr.at(-1),lastSMA50=sma50Arr.at(-1);const r=rsi(closes,14).at(-1);const {macd,signal}=computeMACD(closes);const lastMACD=macd.at(-1),lastSig=signal.at(-1);const trend=(lastSMA20&&lastSMA50)?(lastSMA20>lastSMA50?'Bullish (SMA20 > SMA50)':'Bearish (SMA20 < SMA50)'):'Insufficient data';const box=document.getElementById('techBox');box.innerHTML=`<div>Last Close: <strong>$${latestClose.toLocaleString()}</strong></div><div>SMA20: <strong>$${lastSMA20? lastSMA20.toFixed(2):'—'}</strong></div><div>SMA50: <strong>$${lastSMA50? lastSMA50.toFixed(2):'—'}</strong></div><div>RSI(14): <strong>${r? r.toFixed(1):'—'}</strong></div><div>MACD: <strong>${lastMACD? lastMACD.toFixed(2):'—'}</strong> | Signal: <strong>${lastSig? lastSig.toFixed(2):'—'}</strong></div><div>Trend: <strong>${trend}</strong></div>`;}
+  const url = proxy + encodeURIComponent(
+    `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=${limit}`
+  );
 
-  // --------------- Controller -----------------
-  async function updateAll(days=1, intervalSel='hourly'){
-    try{
-      document.getElementById('techBox').textContent='Loading…';
-      const interval=(intervalSel==='daily')?'1d':'1h';
-      const [mkt,spot]=await Promise.all([fetchMarketChart(days,interval),fetchSimplePrice()]);
-      const prices=mkt.prices;const labels=prices.map(p=> new Date(p[0]).toLocaleString());const closes=prices.map(p=>+p[1]);
-      const price=spot.price;const chg=spot.change;
-      document.getElementById('livePrice').textContent='$'+ price.toLocaleString();
-      const chgEl=document.getElementById('liveChg');chgEl.textContent=(chg>=0?'+':'')+chg.toFixed(2)+'%';chgEl.style.color=chg>=0?'#2fb67c':'#ff5c5c';
-      document.getElementById('lastUpdated').textContent='Updated: '+ new Date().toLocaleString();
-      renderPriceChart(labels,closes);renderMACD(labels,closes);renderRSI(labels,closes);setTechBox(closes.at(-1),closes);
-    }catch(err){console.error(err);document.getElementById('techBox').innerHTML=`<span class="err">Error loading data. Try again shortly.</span>`;}
-  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch Binance data');
+  const raw = await res.json();
+  const prices = raw.map(r => [ +r[0], parseFloat(r[4]) ]);
+  return { prices };
+}
 
-  document.getElementById('rangeBtns').addEventListener('click',(e)=>{if(e.target.tagName!=='BUTTON')return;document.querySelectorAll('#rangeBtns button').forEach(b=>b.classList.remove('active'));e.target.classList.add('active');const days=e.target.getAttribute('data-days');const interval=document.getElementById('intervalSelect').value;updateAll(days,interval)});
-  document.getElementById('intervalSelect').addEventListener('change',(e)=>{const days=document.querySelector('#rangeBtns button.active').getAttribute('data-days');updateAll(days,e.target.value)});
-
-  updateAll(1,'hourly');
-  setInterval(()=>{const days=document.querySelector('#rangeBtns button.active').getAttribute('data-days');const interval=document.getElementById('intervalSelect').value;updateAll(days,interval)},180000);
-  </script>
-</body>
-</html>
+async function fetchSimplePrice() {
+  const url = proxy + encodeURIComponent("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT");
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch Binance spot');
+  const d = await res.json();
+  return { price: +d.lastPrice, change: +d.priceChangePercent };
+}
