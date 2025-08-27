@@ -301,9 +301,13 @@
             // Main function to create the chart and populate table
             async function createChart() {
                 const historicalData = await fetchData();
-                if (historicalData.length === 0) return;
+                if (historicalData.length === 0) {
+                    document.getElementById('loading').textContent = "Failed to load data.";
+                    return;
+                }
 
                 populateTable(historicalData);
+                document.getElementById('loading').style.display = 'none';
 
                 const labels = historicalData.map(d => d.date);
                 const prices = historicalData.map(d => d.price);
