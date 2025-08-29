@@ -4,27 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Downturn Analysis</title>
-    <!-- Tailwind CSS for styling -->
+    <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js for interactive charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .nav-link {
+            transition: color 0.2s ease-in-out;
+        }
+        .nav-link:hover {
+            color: #6366f1; /* Indigo-500 */
+        }
+        .scroll-mt-24 {
+            scroll-margin-top: 6rem;
+        }
+        .chart-container { 
+            display: none; 
+        }
     </style>
 </head>
-<body class="bg-slate-900 text-gray-50 min-h-screen p-4 md:p-8">
+<body class="bg-slate-900 text-gray-50 min-h-screen">
     
-    <div class="max-w-7xl mx-auto bg-slate-800 rounded-xl shadow-2xl overflow-hidden p-6 md:p-10 transition-all duration-300">
-        <h1 class="text-3xl md:text-4xl font-extrabold mb-2 text-center text-indigo-400">
-            A Multifactorial Analysis of the 2025 Crypto Correction
-        </h1>
-        <p class="text-sm md:text-base text-slate-400 mb-8 text-center">
-            A real-time overview and comparative analysis of the market downturn.
-        </p>
+    <!-- Navigation Bar -->
+    <nav class="bg-slate-800 shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Title Section -->
+                <div class="flex-shrink-0">
+                    <span class="font-bold text-xl text-white">August 2025 Crypto Correction</span>
+                </div>
+                <!-- Navigation Links -->
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#overview" class="nav-link text-gray-300 hover:text-white">Overview</a>
+                        <a href="#drivers" class="nav-link text-gray-300 hover:text-white">Core Drivers</a>
+                        <a href="#historical" class="nav-link text-gray-300 hover:text-white">Historical Context</a>
+                        <a href="#outlook" class="nav-link text-gray-300 hover:text-white">Outlook</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
+        
+        <!-- Overview Section (Anchor for navigation) -->
+        <div id="overview" class="scroll-mt-24">
+            <h1 class="text-3xl md:text-4xl font-extrabold mb-2 text-center text-indigo-400">
+                A Multifactorial Analysis of the 2025 Crypto Correction
+            </h1>
+            <p class="text-sm md:text-base text-slate-400 mb-8 text-center">
+                A real-time overview and comparative analysis of the market downturn.
+            </p>
+        </div>
 
         <!-- Dynamic Data Cards Section -->
-        <div class="bg-slate-900 rounded-lg p-6 mb-8 shadow-inner">
+        <div class="bg-slate-800 rounded-lg p-6 mb-8 shadow-inner">
             <div class="text-center">
                 <h2 class="text-2xl md:text-3xl font-bold mb-2 text-slate-200">
                     A Healthy Correction, Not a Collapse
@@ -34,15 +75,15 @@
                 </p>
             </div>
             <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-slate-800 rounded-xl p-6 shadow-md text-center">
+                <div class="bg-slate-900 rounded-xl p-6 shadow-md text-center">
                     <h3 class="text-lg font-semibold text-slate-300">Peak Market Cap</h3>
                     <p id="peak-cap" class="text-3xl md:text-4xl font-bold text-green-500 mt-2">Loading...</p>
                 </div>
-                <div class="bg-slate-800 rounded-xl p-6 shadow-md text-center">
+                <div class="bg-slate-900 rounded-xl p-6 shadow-md text-center">
                     <h3 class="text-lg font-semibold text-slate-300">Correction Low</h3>
                     <p id="low-cap" class="text-3xl md:text-4xl font-bold text-red-500 mt-2">Loading...</p>
                 </div>
-                <div class="bg-slate-800 rounded-xl p-6 shadow-md text-center">
+                <div class="bg-slate-900 rounded-xl p-6 shadow-md text-center">
                     <h3 class="text-lg font-semibold text-slate-300">Total Correction</h3>
                     <p id="total-correction" class="text-3xl md:text-4xl font-bold text-slate-200 mt-2">Loading...</p>
                 </div>
@@ -50,52 +91,68 @@
         </div>
 
         <!-- Price Action Section -->
-        <div class="bg-slate-900 rounded-lg p-6 mb-8 shadow-inner">
+        <div class="bg-slate-800 rounded-lg p-6 mb-8 shadow-inner">
             <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
                 Price Action: A Tale of Two Assets
             </h2>
-            <div class="relative h-96 md:h-[500px]">
-                <canvas id="priceChart"></canvas>
+            <div class="flex justify-center mb-4 space-x-4">
+                <button id="show-btc" class="px-6 py-2 rounded-full font-bold text-sm bg-indigo-500 text-white shadow-lg transform hover:scale-105 transition-transform duration-200">
+                    Bitcoin (BTC)
+                </button>
+                <button id="show-eth" class="px-6 py-2 rounded-full font-bold text-sm bg-slate-700 text-slate-300 shadow-lg transform hover:scale-105 transition-transform duration-200">
+                    Ethereum (ETH)
+                </button>
             </div>
+            
+            <div id="btcChartContainer" class="chart-container relative h-96 md:h-[500px]">
+                <canvas id="btcChart"></canvas>
+            </div>
+            <div id="ethChartContainer" class="chart-container relative h-96 md:h-[500px]">
+                <canvas id="ethChart"></canvas>
+            </div>
+
             <p id="price-status" class="text-center text-sm text-slate-400 mt-2">Loading data...</p>
         </div>
 
-        <!-- What Caused the Downturn Section -->
-        <div class="bg-slate-900 rounded-lg p-6 mb-8 shadow-inner">
-            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
-                What Caused the Downturn?
-            </h2>
-            <ol class="list-decimal list-inside space-y-4 text-slate-400">
-                <li>
-                    <strong class="text-slate-200">Macroeconomic Headwinds:</strong> A sudden hawkish pivot from central banks, following an unexpected spike in inflation data, rattled global financial markets. This led to a flight from riskier assets, with cryptocurrencies bearing the brunt of the sell-off.
-                </li>
-                <li>
-                    <strong class="text-slate-200">Technical & On-Chain Signals:</strong> On-chain metrics revealed a significant increase in dormant Bitcoin supply entering circulation, a common sign of long-term holders taking profits. Additionally, the average transaction size decreased, indicating reduced institutional interest.
-                </li>
-            </ol>
+        <!-- Core Drivers Section (Anchor for navigation) -->
+        <div id="drivers" class="scroll-mt-24">
+            <div class="bg-slate-800 rounded-lg p-6 mb-8 shadow-inner">
+                <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
+                    What Caused the Downturn?
+                </h2>
+                <ol class="list-decimal list-inside space-y-4 text-slate-400">
+                    <li>
+                        <strong class="text-slate-200">Macroeconomic Headwinds:</strong> A sudden hawkish pivot from central banks, following an unexpected spike in inflation data, rattled global financial markets. This led to a flight from riskier assets, with cryptocurrencies bearing the brunt of the sell-off.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200">Technical & On-Chain Signals:</strong> On-chain metrics revealed a significant increase in dormant Bitcoin supply entering circulation, a common sign of long-term holders taking profits. Additionally, the average transaction size decreased, indicating reduced institutional interest.
+                    </li>
+                </ol>
+            </div>
         </div>
 
-        <!-- Timeline of Key Events -->
-        <div class="bg-slate-900 rounded-lg p-6 mb-8 shadow-inner">
-            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
-                Timeline of Key Events (August 2025)
-            </h2>
-            <ul class="list-disc list-inside space-y-4 text-slate-400">
-                <li><strong class="text-slate-200">August 1-10:</strong> Market trades sideways, with minor volatility. Bitcoin and Ethereum see steady gains.</li>
-                <li><strong class="text-slate-200">August 11:</strong> The Consumer Price Index (CPI) report reveals a significant inflation spike. Traditional markets react negatively.</li>
-                <li><strong class="text-slate-200">August 12-15:</strong> Bitcoin and Ethereum start a sharp decline. Long-term holders begin to sell, and on-chain activity shifts to profit-taking.</li>
-                <li><strong class="text-slate-200">August 16-20:</strong> A cascade of liquidations on overleveraged positions accelerates the downturn.</li>
-                <li><strong class="text-slate-200">August 21-25:</strong> The market finds a temporary bottom. Volatility remains high as bulls and bears fight for control.</li>
-                <li><strong class="text-slate-200">August 26-Present:</strong> Market attempts to consolidate and form a new base, but the overall trend remains uncertain.</li>
-            </ul>
+        <!-- Historical Context Section (Anchor for navigation) -->
+        <div id="historical" class="scroll-mt-24">
+            <div class="bg-slate-800 rounded-lg p-6 mb-8 shadow-inner">
+                <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
+                    Timeline of Key Events (August 2025)
+                </h2>
+                <ul class="list-disc list-inside space-y-4 text-slate-400">
+                    <li><strong class="text-slate-200">August 1-10:</strong> Market trades sideways, with minor volatility. Bitcoin and Ethereum see steady gains.</li>
+                    <li><strong class="text-slate-200">August 11:</strong> The Consumer Price Index (CPI) report reveals a significant inflation spike. Traditional markets react negatively.</li>
+                    <li><strong class="text-slate-200">August 12-15:</strong> Bitcoin and Ethereum start a sharp decline. Long-term holders begin to sell, and on-chain activity shifts to profit-taking.</li>
+                    <li><strong class="text-slate-200">August 16-20:</strong> A cascade of liquidations on overleveraged positions accelerates the downturn.</li>
+                    <li><strong class="text-slate-200">August 21-25:</strong> The market finds a temporary bottom. Volatility remains high as bulls and bears fight for control.</li>
+                    <li><strong class="text-slate-200">August 26-Present:</strong> Market attempts to consolidate and form a new base, but the overall trend remains uncertain.</li>
+                </ul>
+            </div>
         </div>
         
         <!-- A Tale of Two Downturns Section -->
-        <div class="bg-slate-900 rounded-lg p-6 mb-8 shadow-inner">
+        <div class="bg-slate-800 rounded-lg p-6 mb-8 shadow-inner">
             <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
                 A Tale of Two Downturns
             </h2>
-            <!-- Dynamic Controls -->
             <div class="flex justify-center mb-4 space-x-4">
                 <button id="show-decline" class="px-6 py-2 rounded-full font-bold text-sm bg-indigo-500 text-white shadow-lg transform hover:scale-105 transition-transform duration-200">
                     Market Cap Decline
@@ -104,32 +161,38 @@
                     Systemic Contagion
                 </button>
             </div>
-            <div class="relative h-96 md:h-[500px]">
-                <canvas id="comparisonChart"></canvas>
+            
+            <div id="declineChartContainer" class="chart-container relative h-96 md:h-[500px]">
+                <canvas id="declineChart"></canvas>
+            </div>
+            <div id="contagionChartContainer" class="chart-container relative h-96 md:h-[500px]">
+                <canvas id="contagionChart"></canvas>
             </div>
         </div>
 
         <!-- The Path Forward -->
-        <div class="bg-slate-900 rounded-lg p-6 shadow-inner">
-            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
-                The Path Forward
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <h3 class="text-xl md:text-2xl font-bold mb-2 text-green-500">Bullish Catalysts for Q4 2025</h3>
-                    <ul class="list-disc list-inside space-y-2 text-slate-400">
-                        <li><strong class="text-slate-200">Regulatory Clarity:</strong> Positive news on stablecoin and crypto-asset regulation could boost institutional confidence.</li>
-                        <li><strong class="text-slate-200">Halving Narrative:</strong> Renewed interest in Bitcoin's next halving event could trigger a narrative-driven rally.</li>
-                        <li><strong class="text-slate-200">ETF Inflows:</strong> Continued inflows into Bitcoin and Ethereum ETFs could provide a consistent demand floor.</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="text-xl md:text-2xl font-bold mb-2 text-red-500">Bearish Threats to Monitor</h3>
-                    <ul class="list-disc list-inside space-y-2 text-slate-400">
-                        <li><strong class="text-slate-200">Macroeconomic Uncertainty:</strong> Further hawkish policy from central banks could extend the risk-off environment.</li>
-                        <li><strong class="text-slate-200">Contagion Risk:</strong> Potential failures in overleveraged DeFi protocols or centralized exchanges could trigger a market-wide liquidity crisis.</li>
-                        <li><strong class="text-slate-200">Whale Movements:</strong> A continued trend of large, dormant Bitcoin wallets selling off could signal a prolonged bear market.</li>
-                    </ul>
+        <div id="outlook" class="scroll-mt-24">
+            <div class="bg-slate-800 rounded-lg p-6 shadow-inner">
+                <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
+                    The Path Forward
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-xl md:text-2xl font-bold mb-2 text-green-500">Bullish Catalysts for Q4 2025</h3>
+                        <ul class="list-disc list-inside space-y-2 text-slate-400">
+                            <li><strong class="text-slate-200">Regulatory Clarity:</strong> Positive news on stablecoin and crypto-asset regulation could boost institutional confidence.</li>
+                            <li><strong class="text-slate-200">Halving Narrative:</strong> Renewed interest in Bitcoin's next halving event could trigger a narrative-driven rally.</li>
+                            <li><strong class="text-slate-200">ETF Inflows:</strong> Continued inflows into Bitcoin and Ethereum ETFs could provide a consistent demand floor.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-xl md:text-2xl font-bold mb-2 text-red-500">Bearish Threats to Monitor</h3>
+                        <ul class="list-disc list-inside space-y-2 text-slate-400">
+                            <li><strong class="text-slate-200">Macroeconomic Uncertainty:</strong> Further hawkish policy from central banks could extend the risk-off environment.</li>
+                            <li><strong class="text-slate-200">Contagion Risk:</strong> Potential failures in overleveraged DeFi protocols or centralized exchanges could trigger a market-wide liquidity crisis.</li>
+                            <li><strong class="text-slate-200">Whale Movements:</strong> A continued trend of large, dormant Bitcoin wallets selling off could signal a prolonged bear market.</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -181,54 +244,90 @@
                     document.getElementById('low-cap').textContent = `$${(lowPrice * btcSupply / 1000000000000).toFixed(2)}T`;
                     document.getElementById('total-correction').textContent = `~${totalCorrection.toFixed(2)}%`;
 
-                    // --- Price Action Chart ---
-                    const priceCtx = document.getElementById('priceChart').getContext('2d');
-                    new Chart(priceCtx, {
+                    // --- Price Action Chart Logic ---
+                    const btcCtx = document.getElementById('btcChart').getContext('2d');
+                    const ethCtx = document.getElementById('ethChart').getContext('2d');
+
+                    let btcChart = new Chart(btcCtx, {
                         type: 'line',
                         data: {
                             labels: btcData.map(d => d.date),
-                            datasets: [
-                                {
-                                    label: 'Bitcoin (USD)',
-                                    data: btcData.map(d => ({ x: d.date, y: d.price })),
-                                    borderColor: '#f97316', 
-                                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
-                                    tension: 0.2,
-                                    fill: false,
-                                    pointRadius: 0,
-                                },
-                                {
-                                    label: 'Ethereum (USD)',
-                                    data: ethData.map(d => ({ x: d.date, y: d.price })),
-                                    borderColor: '#60a5fa', 
-                                    backgroundColor: 'rgba(96, 165, 250, 0.1)',
-                                    tension: 0.2,
-                                    fill: false,
-                                    pointRadius: 0,
-                                }
-                            ]
+                            datasets: [{
+                                label: 'Bitcoin (USD)',
+                                data: btcData.map(d => ({ x: d.date, y: d.price })),
+                                borderColor: '#f97316', 
+                                backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                                tension: 0.2,
+                                fill: false,
+                                pointRadius: 0,
+                            }]
                         },
                         options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
+                            responsive: true, maintainAspectRatio: false,
                             scales: {
                                 x: { type: 'time', time: { unit: 'day' }, ticks: { color: '#94a3b8' }, grid: { display: false } },
                                 y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' } }
                             },
-                            plugins: {
-                                tooltip: { mode: 'index', intersect: false }
-                            }
+                            plugins: { tooltip: { mode: 'index', intersect: false }, legend: { display: false } }
                         }
                     });
 
-                    // --- A Tale of Two Downturns Chart ---
-                    const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+                    let ethChart = new Chart(ethCtx, {
+                        type: 'line',
+                        data: {
+                            labels: ethData.map(d => d.date),
+                            datasets: [{
+                                label: 'Ethereum (USD)',
+                                data: ethData.map(d => ({ x: d.date, y: d.price })),
+                                borderColor: '#60a5fa', 
+                                backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                                tension: 0.2,
+                                fill: false,
+                                pointRadius: 0,
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            scales: {
+                                x: { type: 'time', time: { unit: 'day' }, ticks: { color: '#94a3b8' }, grid: { display: false } },
+                                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' } }
+                            },
+                            plugins: { tooltip: { mode: 'index', intersect: false }, legend: { display: false } }
+                        }
+                    });
+                    
+                    document.getElementById('btcChartContainer').style.display = 'block';
+                    document.getElementById('show-btc').classList.add('bg-indigo-500', 'text-white');
+                    document.getElementById('show-btc').classList.remove('bg-slate-700', 'text-slate-300');
+
+                    // Controller logic for the two assets
+                    document.getElementById('show-btc').addEventListener('click', () => {
+                        document.getElementById('btcChartContainer').style.display = 'block';
+                        document.getElementById('ethChartContainer').style.display = 'none';
+                        document.getElementById('show-btc').classList.remove('bg-slate-700', 'text-slate-300');
+                        document.getElementById('show-btc').classList.add('bg-indigo-500', 'text-white');
+                        document.getElementById('show-eth').classList.remove('bg-indigo-500', 'text-white');
+                        document.getElementById('show-eth').classList.add('bg-slate-700', 'text-slate-300');
+                    });
+                    
+                    document.getElementById('show-eth').addEventListener('click', () => {
+                        document.getElementById('btcChartContainer').style.display = 'none';
+                        document.getElementById('ethChartContainer').style.display = 'block';
+                        document.getElementById('show-eth').classList.remove('bg-slate-700', 'text-slate-300');
+                        document.getElementById('show-eth').classList.add('bg-indigo-500', 'text-white');
+                        document.getElementById('show-btc').classList.remove('bg-indigo-500', 'text-white');
+                        document.getElementById('show-btc').classList.add('bg-slate-700', 'text-slate-300');
+                    });
+
+                    // --- A Tale of Two Downturns Chart Logic ---
+                    const declineCtx = document.getElementById('declineChart').getContext('2d');
+                    const contagionCtx = document.getElementById('contagionChart').getContext('2d');
                     
                     const contagionScore2022 = 0.85; 
                     const decline2022 = 50; 
                     const contagionScore2025 = 0.45;
                     
-                    let comparisonChart = new Chart(comparisonCtx, {
+                    let declineChart = new Chart(declineCtx, {
                         type: 'bar',
                         data: {
                             labels: ['2022 Winter', 'August 2025'],
@@ -239,11 +338,30 @@
                                     backgroundColor: ['#f87171', '#f87171'],
                                     hidden: false
                                 },
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' } }
+                            },
+                            plugins: {
+                                legend: { display: false }
+                            }
+                        }
+                    });
+
+                    let contagionChart = new Chart(contagionCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['2022 Winter', 'August 2025'],
+                            datasets: [
                                 {
                                     label: 'Systemic Contagion Score',
                                     data: [contagionScore2022, contagionScore2025],
                                     backgroundColor: ['#60a5fa', '#60a5fa'],
-                                    hidden: true
+                                    hidden: false
                                 }
                             ]
                         },
@@ -251,22 +369,21 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             scales: {
-                                y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' } },
-                                x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+                                y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' } }
                             },
                             plugins: {
-                                legend: {
-                                    display: false
-                                }
+                                legend: { display: false }
                             }
                         }
                     });
+                    
+                    document.getElementById('declineChartContainer').style.display = 'block';
+                    document.getElementById('contagionChartContainer').style.display = 'none';
 
                     // Controller logic for the two-downturns chart
                     document.getElementById('show-decline').addEventListener('click', () => {
-                        comparisonChart.data.datasets[0].hidden = false;
-                        comparisonChart.data.datasets[1].hidden = true;
-                        comparisonChart.update();
+                        document.getElementById('declineChartContainer').style.display = 'block';
+                        document.getElementById('contagionChartContainer').style.display = 'none';
                         document.getElementById('show-decline').classList.remove('bg-slate-700', 'text-slate-300');
                         document.getElementById('show-decline').classList.add('bg-indigo-500', 'text-white');
                         document.getElementById('show-contagion').classList.remove('bg-indigo-500', 'text-white');
@@ -274,9 +391,8 @@
                     });
                     
                     document.getElementById('show-contagion').addEventListener('click', () => {
-                        comparisonChart.data.datasets[0].hidden = true;
-                        comparisonChart.data.datasets[1].hidden = false;
-                        comparisonChart.update();
+                        document.getElementById('declineChartContainer').style.display = 'none';
+                        document.getElementById('contagionChartContainer').style.display = 'block';
                         document.getElementById('show-contagion').classList.remove('bg-slate-700', 'text-slate-300');
                         document.getElementById('show-contagion').classList.add('bg-indigo-500', 'text-white');
                         document.getElementById('show-decline').classList.remove('bg-indigo-500', 'text-white');
