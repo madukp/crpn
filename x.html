@@ -127,6 +127,20 @@
             <p id="price-status" class="text-center text-sm text-slate-400 mt-2">Loading data...</p>
         </div>
 
+        <!-- Today's Market Pulse Section -->
+        <div class="bg-slate-800 rounded-lg p-6 mb-8 shadow-inner">
+            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
+                Today's Market Pulse
+            </h2>
+            <div id="news-card" class="bg-slate-900 rounded-lg p-6 shadow-md border border-slate-700">
+                <p id="news-status" class="text-center text-slate-400">Loading latest news...</p>
+                <h3 id="news-headline" class="text-lg md:text-xl font-bold text-indigo-400 mt-2 hidden"></h3>
+                <p id="news-summary" class="text-slate-400 mt-2 hidden"></p>
+                <p id="news-analysis" class="text-slate-500 text-xs mt-4 hidden"></p>
+                <p id="news-source" class="text-slate-600 text-xs mt-2 hidden"></p>
+            </div>
+        </div>
+
 
         <!-- Core Drivers Section (Anchor for navigation) -->
         <div id="drivers" class="scroll-mt-24">
@@ -221,6 +235,35 @@
                 return res.json();
             }
 
+            // Function to fetch news
+            async function fetchNews() {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=`;
+                const prompt = "Act as a seasoned financial news analyst. Generate a single recent news headline about the cryptocurrency market, a very brief summary (one sentence), and a short, 2-3 sentence analysis of its potential market impact. Use the current date for the headline. Ensure the analysis is neutral and focused on market signals. Provide the response as a JSON object with keys: 'headline', 'summary', 'analysis', and 'source'. The source should be a placeholder like 'Financial News Outlet'.";
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+
+                    if (!response.ok) throw new Error(`API fetch failed with status: ${response.status}`);
+                    const result = await response.json();
+                    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const jsonObject = JSON.parse(text);
+                    return jsonObject;
+                } catch (error) {
+                    console.error("Error fetching news:", error);
+                    return {
+                        headline: 'Market Update: Data Unavailable',
+                        summary: 'Unable to fetch the latest news at this time.',
+                        analysis: 'Please check your network connection and try reloading the page.',
+                        source: 'Local Cache'
+                    };
+                }
+            }
+
+
             // Function to process data for charts
             function processData(rawData) {
                 // Coinbase returns newest first, so reverse to have oldest first
@@ -244,30 +287,6 @@
                 const sum = prices.slice(0, 200).reduce((a, b) => a + b, 0);
                 return sum / 200;
             }
-
-            // Function to populate the table with the last 7 days of BTC data
-            function populateTable(data) {
-                const tableBody = document.getElementById('dataTableBody');
-                tableBody.innerHTML = '';
-                const lastSevenDays = data.slice(-7).reverse();
-
-                lastSevenDays.forEach((item, index) => {
-                    const priceChange = index < lastSevenDays.length - 1 ? ((item.price - lastSevenDays[index + 1].price) / lastSevenDays[index + 1].price) * 100 : 0;
-                    const changeClass = priceChange >= 0 ? 'text-green-500' : 'text-red-500';
-                    const changeText = priceChange >= 0 ? `+${priceChange.toFixed(2)}%` : `${priceChange.toFixed(2)}%`;
-
-                    const row = document.createElement('tr');
-                    row.className = 'border-b border-slate-700 hover:bg-slate-700 transition-colors';
-                    row.innerHTML = `
-                        <td class="px-4 py-3">${item.date.toISOString().split('T')[0]}</td>
-                        <td class="px-4 py-3">$${item.price.toLocaleString()}</td>
-                        <td class="px-4 py-3">${(item.volume / 1000000).toFixed(2)}M</td>
-                        <td class="px-4 py-3 ${changeClass}">${index === lastSevenDays.length - 1 ? 'N/A' : changeText}</td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-            }
-
 
             async function createDashboard() {
                 try {
