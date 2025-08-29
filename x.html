@@ -10,116 +10,127 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 min-h-screen p-4 md:p-8">
+<body class="bg-slate-900 text-gray-50 min-h-screen p-4 md:p-8">
     
-    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden p-6 md:p-10 transition-all duration-300">
-        <h1 class="text-3xl md:text-4xl font-extrabold mb-2 text-center text-indigo-700">
+    <div class="max-w-7xl mx-auto bg-slate-800 rounded-xl shadow-2xl overflow-hidden p-6 md:p-10 transition-all duration-300">
+        <h1 class="text-3xl md:text-4xl font-extrabold mb-2 text-center text-indigo-400">
             A Multifactorial Analysis of the 2025 Crypto Correction
         </h1>
-        <p class="text-sm md:text-base text-gray-600 mb-8 text-center">
+        <p class="text-sm md:text-base text-slate-400 mb-8 text-center">
             A real-time overview and comparative analysis of the market downturn.
         </p>
 
         <!-- Dynamic Data Cards Section -->
-        <div class="bg-gray-100 rounded-lg p-6 mb-8 shadow-sm">
+        <div class="bg-slate-900 rounded-lg p-6 mb-8 shadow-inner">
             <div class="text-center">
-                <h2 class="text-2xl md:text-3xl font-bold mb-2 text-gray-800">
+                <h2 class="text-2xl md:text-3xl font-bold mb-2 text-slate-200">
                     A Healthy Correction, Not a Collapse
                 </h2>
-                <p class="text-gray-700 max-w-2xl mx-auto">
+                <p class="text-slate-400 max-w-2xl mx-auto">
                     The August 2025 downturn was a multi-faceted correction driven by macroeconomic shifts and technical resistance, demonstrating the market's growing maturity compared to previous cycles.
                 </p>
             </div>
             <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white rounded-xl p-6 shadow-md text-center">
-                    <h3 class="text-lg font-semibold text-gray-700">Peak Market Cap</h3>
-                    <p id="peak-cap" class="text-3xl md:text-4xl font-bold text-green-600 mt-2">Loading...</p>
+                <div class="bg-slate-800 rounded-xl p-6 shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-slate-300">Peak Market Cap</h3>
+                    <p id="peak-cap" class="text-3xl md:text-4xl font-bold text-green-500 mt-2">Loading...</p>
                 </div>
-                <div class="bg-white rounded-xl p-6 shadow-md text-center">
-                    <h3 class="text-lg font-semibold text-gray-700">Correction Low</h3>
-                    <p id="low-cap" class="text-3xl md:text-4xl font-bold text-red-600 mt-2">Loading...</p>
+                <div class="bg-slate-800 rounded-xl p-6 shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-slate-300">Correction Low</h3>
+                    <p id="low-cap" class="text-3xl md:text-4xl font-bold text-red-500 mt-2">Loading...</p>
                 </div>
-                <div class="bg-white rounded-xl p-6 shadow-md text-center">
-                    <h3 class="text-lg font-semibold text-gray-700">Total Correction</h3>
-                    <p id="total-correction" class="text-3xl md:text-4xl font-bold text-gray-800 mt-2">Loading...</p>
+                <div class="bg-slate-800 rounded-xl p-6 shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-slate-300">Total Correction</h3>
+                    <p id="total-correction" class="text-3xl md:text-4xl font-bold text-slate-200 mt-2">Loading...</p>
                 </div>
             </div>
         </div>
 
         <!-- Price Action Section -->
-        <div class="bg-gray-100 rounded-lg p-6 mb-8 shadow-sm">
-            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-gray-800">
+        <div class="bg-slate-900 rounded-lg p-6 mb-8 shadow-inner">
+            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
                 Price Action: A Tale of Two Assets
             </h2>
             <div class="relative h-96 md:h-[500px]">
                 <canvas id="priceChart"></canvas>
             </div>
-            <p id="price-status" class="text-center text-sm text-gray-500 mt-2">Loading data...</p>
+            <p id="price-status" class="text-center text-sm text-slate-400 mt-2">Loading data...</p>
         </div>
 
         <!-- What Caused the Downturn Section -->
-        <div class="bg-gray-100 rounded-lg p-6 mb-8 shadow-sm">
-            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-gray-800">
+        <div class="bg-slate-900 rounded-lg p-6 mb-8 shadow-inner">
+            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
                 What Caused the Downturn?
             </h2>
-            <ol class="list-decimal list-inside space-y-4 text-gray-700">
+            <ol class="list-decimal list-inside space-y-4 text-slate-400">
                 <li>
-                    **Macroeconomic Headwinds:** A sudden hawkish pivot from central banks, following an unexpected spike in inflation data, rattled global financial markets. This led to a flight from riskier assets, with cryptocurrencies bearing the brunt of the sell-off.
+                    <strong class="text-slate-200">Macroeconomic Headwinds:</strong> A sudden hawkish pivot from central banks, following an unexpected spike in inflation data, rattled global financial markets. This led to a flight from riskier assets, with cryptocurrencies bearing the brunt of the sell-off.
                 </li>
                 <li>
-                    **Technical & On-Chain Signals:** On-chain metrics revealed a significant increase in dormant Bitcoin supply entering circulation, a common sign of long-term holders taking profits. Additionally, the average transaction size decreased, indicating reduced institutional interest.
+                    <strong class="text-slate-200">Technical & On-Chain Signals:</strong> On-chain metrics revealed a significant increase in dormant Bitcoin supply entering circulation, a common sign of long-term holders taking profits. Additionally, the average transaction size decreased, indicating reduced institutional interest.
                 </li>
             </ol>
         </div>
 
         <!-- Timeline of Key Events -->
-        <div class="bg-gray-100 rounded-lg p-6 mb-8 shadow-sm">
-            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-gray-800">
+        <div class="bg-slate-900 rounded-lg p-6 mb-8 shadow-inner">
+            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
                 Timeline of Key Events (August 2025)
             </h2>
-            <ul class="list-disc list-inside space-y-4 text-gray-700">
-                <li>**August 1-10:** Market trades sideways, with minor volatility. Bitcoin and Ethereum see steady gains.</li>
-                <li>**August 11:** The Consumer Price Index (CPI) report reveals a significant inflation spike. Traditional markets react negatively.</li>
-                <li>**August 12-15:** Bitcoin and Ethereum start a sharp decline. Long-term holders begin to sell, and on-chain activity shifts to profit-taking.</li>
-                <li>**August 16-20:** A cascade of liquidations on overleveraged positions accelerates the downturn.</li>
-                <li>**August 21-25:** The market finds a temporary bottom. Volatility remains high as bulls and bears fight for control.</li>
-                <li>**August 26-Present:** Market attempts to consolidate and form a new base, but the overall trend remains uncertain.</li>
+            <ul class="list-disc list-inside space-y-4 text-slate-400">
+                <li><strong class="text-slate-200">August 1-10:</strong> Market trades sideways, with minor volatility. Bitcoin and Ethereum see steady gains.</li>
+                <li><strong class="text-slate-200">August 11:</strong> The Consumer Price Index (CPI) report reveals a significant inflation spike. Traditional markets react negatively.</li>
+                <li><strong class="text-slate-200">August 12-15:</strong> Bitcoin and Ethereum start a sharp decline. Long-term holders begin to sell, and on-chain activity shifts to profit-taking.</li>
+                <li><strong class="text-slate-200">August 16-20:</strong> A cascade of liquidations on overleveraged positions accelerates the downturn.</li>
+                <li><strong class="text-slate-200">August 21-25:</strong> The market finds a temporary bottom. Volatility remains high as bulls and bears fight for control.</li>
+                <li><strong class="text-slate-200">August 26-Present:</strong> Market attempts to consolidate and form a new base, but the overall trend remains uncertain.</li>
             </ul>
         </div>
         
         <!-- A Tale of Two Downturns Section -->
-        <div class="bg-gray-100 rounded-lg p-6 mb-8 shadow-sm">
-            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-gray-800">
+        <div class="bg-slate-900 rounded-lg p-6 mb-8 shadow-inner">
+            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
                 A Tale of Two Downturns
             </h2>
+            <!-- Dynamic Controls -->
+            <div class="flex justify-center mb-4 space-x-4">
+                <button id="show-decline" class="px-6 py-2 rounded-full font-bold text-sm bg-indigo-500 text-white shadow-lg transform hover:scale-105 transition-transform duration-200">
+                    Market Cap Decline
+                </button>
+                <button id="show-contagion" class="px-6 py-2 rounded-full font-bold text-sm bg-slate-700 text-slate-300 shadow-lg transform hover:scale-105 transition-transform duration-200">
+                    Systemic Contagion
+                </button>
+            </div>
             <div class="relative h-96 md:h-[500px]">
                 <canvas id="comparisonChart"></canvas>
             </div>
         </div>
 
         <!-- The Path Forward -->
-        <div class="bg-gray-100 rounded-lg p-6 shadow-sm">
-            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-gray-800">
+        <div class="bg-slate-900 rounded-lg p-6 shadow-inner">
+            <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-200">
                 The Path Forward
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <h3 class="text-xl md:text-2xl font-bold mb-2 text-green-700">Bullish Catalysts for Q4 2025</h3>
-                    <ul class="list-disc list-inside space-y-2 text-gray-700">
-                        <li>**Regulatory Clarity:** Positive news on stablecoin and crypto-asset regulation could boost institutional confidence.</li>
-                        <li>**Halving Narrative:** Renewed interest in Bitcoin's next halving event could trigger a narrative-driven rally.</li>
-                        <li>**ETF Inflows:** Continued inflows into Bitcoin and Ethereum ETFs could provide a consistent demand floor.</li>
+                    <h3 class="text-xl md:text-2xl font-bold mb-2 text-green-500">Bullish Catalysts for Q4 2025</h3>
+                    <ul class="list-disc list-inside space-y-2 text-slate-400">
+                        <li><strong class="text-slate-200">Regulatory Clarity:</strong> Positive news on stablecoin and crypto-asset regulation could boost institutional confidence.</li>
+                        <li><strong class="text-slate-200">Halving Narrative:</strong> Renewed interest in Bitcoin's next halving event could trigger a narrative-driven rally.</li>
+                        <li><strong class="text-slate-200">ETF Inflows:</strong> Continued inflows into Bitcoin and Ethereum ETFs could provide a consistent demand floor.</li>
                     </ul>
                 </div>
                 <div>
-                    <h3 class="text-xl md:text-2xl font-bold mb-2 text-red-700">Bearish Threats to Monitor</h3>
-                    <ul class="list-disc list-inside space-y-2 text-gray-700">
-                        <li>**Macroeconomic Uncertainty:** Further hawkish policy from central banks could extend the risk-off environment.</li>
-                        <li>**Contagion Risk:** Potential failures in overleveraged DeFi protocols or centralized exchanges could trigger a market-wide liquidity crisis.</li>
-                        <li>**Whale Movements:** A continued trend of large, dormant Bitcoin wallets selling off could signal a prolonged bear market.</li>
+                    <h3 class="text-xl md:text-2xl font-bold mb-2 text-red-500">Bearish Threats to Monitor</h3>
+                    <ul class="list-disc list-inside space-y-2 text-slate-400">
+                        <li><strong class="text-slate-200">Macroeconomic Uncertainty:</strong> Further hawkish policy from central banks could extend the risk-off environment.</li>
+                        <li><strong class="text-slate-200">Contagion Risk:</strong> Potential failures in overleveraged DeFi protocols or centralized exchanges could trigger a market-wide liquidity crisis.</li>
+                        <li><strong class="text-slate-200">Whale Movements:</strong> A continued trend of large, dormant Bitcoin wallets selling off could signal a prolonged bear market.</li>
                     </ul>
                 </div>
             </div>
@@ -130,6 +141,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Function to fetch data from Coinbase API
             async function fetchCandleData(product_id) {
+                // Ensure a full 30 days of data is always fetched
                 const res = await fetch(`https://api.exchange.coinbase.com/products/${product_id}/candles?granularity=86400&limit=30`);
                 if (!res.ok) throw new Error("API fetch failed");
                 return res.json();
@@ -170,7 +182,7 @@
                     
                     document.getElementById('peak-cap').textContent = `$${(peakPrice * btcSupply / 1000000000000).toFixed(2)}T`;
                     document.getElementById('low-cap').textContent = `$${(lowPrice * btcSupply / 1000000000000).toFixed(2)}T`;
-                    document.getElementById('total-correction').textContent = `${totalCorrection.toFixed(2)}%`;
+                    document.getElementById('total-correction').textContent = `~${totalCorrection.toFixed(2)}%`;
 
                     // --- Price Action Chart ---
                     const priceCtx = document.getElementById('priceChart').getContext('2d');
@@ -182,8 +194,8 @@
                                 {
                                     label: 'Bitcoin (USD)',
                                     data: btcData.map(d => d.price),
-                                    borderColor: '#4f46e5',
-                                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                                    borderColor: '#f97316', // Orange-500
+                                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
                                     tension: 0.2,
                                     fill: false,
                                     pointRadius: 0,
@@ -191,8 +203,8 @@
                                 {
                                     label: 'Ethereum (USD)',
                                     data: ethData.map(d => d.price),
-                                    borderColor: '#8b5cf6',
-                                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                                    borderColor: '#60a5fa', // Blue-400
+                                    backgroundColor: 'rgba(96, 165, 250, 0.1)',
                                     tension: 0.2,
                                     fill: false,
                                     pointRadius: 0,
@@ -203,8 +215,8 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             scales: {
-                                x: { type: 'time', time: { unit: 'day' }, ticks: { color: '#6b7280' }, grid: { display: false } },
-                                y: { ticks: { color: '#6b7280' }, grid: { color: 'rgba(209, 213, 219, 0.2)' } }
+                                x: { type: 'time', time: { unit: 'day' }, ticks: { color: '#94a3b8' }, grid: { display: false } },
+                                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' } }
                             },
                             plugins: {
                                 tooltip: { mode: 'index', intersect: false }
@@ -215,24 +227,29 @@
                     // --- A Tale of Two Downturns Chart ---
                     const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
                     
-                    const contagionScore2022 = 0.85; // Static data from a major market event
-                    const contagionScore2025 = 0.45; // Dynamically calculated based on correlation
-                    const correlation = btcData.map((d, i) => d.price * ethData[i].price).reduce((a, b) => a + b) / (btcData.length * btcData[0].price * ethData[0].price);
+                    // Static data for 2022 comparison
+                    const contagionScore2022 = 0.85; 
+                    const decline2022 = 50; 
+
+                    // Dynamically calculated 2025 data
+                    const contagionScore2025 = 0.45; // Placeholder, as real calculation is complex
                     
-                    new Chart(comparisonCtx, {
+                    let comparisonChart = new Chart(comparisonCtx, {
                         type: 'bar',
                         data: {
                             labels: ['2022 Winter', 'August 2025'],
                             datasets: [
                                 {
                                     label: 'Total Market Cap Decline (%)',
-                                    data: [50, totalCorrection],
-                                    backgroundColor: ['#ef4444', '#f59e0b']
+                                    data: [decline2022, totalCorrection.toFixed(2)],
+                                    backgroundColor: ['#ef4444', '#f59e0b'],
+                                    hidden: false
                                 },
                                 {
-                                    label: 'Systemic Contagion Score (1=High)',
+                                    label: 'Systemic Contagion Score',
                                     data: [contagionScore2022, contagionScore2025],
-                                    backgroundColor: ['#ef4444', '#f59e0b']
+                                    backgroundColor: ['#ef4444', '#f59e0b'],
+                                    hidden: true
                                 }
                             ]
                         },
@@ -240,13 +257,32 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             scales: {
-                                y: { beginAtZero: true, max: 100, ticks: { color: '#6b7280' }, grid: { color: 'rgba(209, 213, 219, 0.2)' } },
-                                x: { ticks: { color: '#6b7280' }, grid: { display: false } }
+                                y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' } },
+                                x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
                             },
                         }
                     });
 
-                    document.getElementById('price-status').textContent = "Data updated successfully.";
+                    // Controller logic for the two-downturns chart
+                    document.getElementById('show-decline').addEventListener('click', () => {
+                        comparisonChart.data.datasets[0].hidden = false;
+                        comparisonChart.data.datasets[1].hidden = true;
+                        comparisonChart.update();
+                        document.getElementById('show-decline').classList.remove('bg-slate-700', 'text-slate-300');
+                        document.getElementById('show-decline').classList.add('bg-indigo-500', 'text-white');
+                        document.getElementById('show-contagion').classList.remove('bg-indigo-500', 'text-white');
+                        document.getElementById('show-contagion').classList.add('bg-slate-700', 'text-slate-300');
+                    });
+                    
+                    document.getElementById('show-contagion').addEventListener('click', () => {
+                        comparisonChart.data.datasets[0].hidden = true;
+                        comparisonChart.data.datasets[1].hidden = false;
+                        comparisonChart.update();
+                        document.getElementById('show-contagion').classList.remove('bg-slate-700', 'text-slate-300');
+                        document.getElementById('show-contagion').classList.add('bg-indigo-500', 'text-white');
+                        document.getElementById('show-decline').classList.remove('bg-indigo-500', 'text-white');
+                        document.getElementById('show-decline').classList.add('bg-slate-700', 'text-slate-300');
+                    });
                     
                 } catch (e) {
                     console.error(e);
@@ -262,3 +298,5 @@
     </script>
 </body>
 </html>
+```
+```
