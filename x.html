@@ -166,12 +166,12 @@
                     Timeline of Key Events (August 2025)
                 </h2>
                 <ul class="list-disc list-inside space-y-4 text-slate-400">
-                    <li><strong class="text-slate-200">August 1-10:</strong> Market trades sideways, with minor volatility. Bitcoin and Ethereum see steady gains.</li>
-                    <li><strong class="text-slate-200">August 11:</strong> The Consumer Price Index (CPI) report reveals a significant inflation spike. Traditional markets react negatively.</li>
-                    <li><strong class="text-slate-200">August 12-15:</strong> Bitcoin and Ethereum start a sharp decline. Long-term holders begin to sell, and on-chain activity shifts to profit-taking.</li>
-                    <li><strong class="text-slate-200">August 16-20:</strong> A cascade of liquidations on overleveraged positions accelerates the downturn.</li>
-                    <li><strong class="text-slate-200">August 21-25:</strong> The market finds a temporary bottom. Volatility remains high as bulls and bears fight for control.</li>
-                    <li><strong class="text-slate-200">August 26-Present:</strong> Market attempts to consolidate and form a new base, but the overall trend remains uncertain.</li>
+                    <li id="timeline-event-1"><strong class="text-slate-200">August 1-10:</strong> Market trades sideways, with minor volatility. Bitcoin and Ethereum see steady gains.</li>
+                    <li id="timeline-event-2"><strong class="text-slate-200">August 11:</strong> The Consumer Price Index (CPI) report reveals a significant inflation spike. Traditional markets react negatively.</li>
+                    <li id="timeline-event-3"><strong class="text-slate-200">August 12-15:</strong> Bitcoin and Ethereum start a sharp decline. Long-term holders begin to sell, and on-chain activity shifts to profit-taking.</li>
+                    <li id="timeline-event-4"><strong class="text-slate-200">August 16-20:</strong> A cascade of liquidations on overleveraged positions accelerates the downturn.</li>
+                    <li id="timeline-event-5"><strong class="text-slate-200">August 21-25:</strong> The market finds a temporary bottom. Volatility remains high as bulls and bears fight for control.</li>
+                    <li id="timeline-event-6"><strong class="text-slate-200">August 26-Present:</strong> Market attempts to consolidate and form a new base, but the overall trend remains uncertain.</li>
                 </ul>
             </div>
         </div>
@@ -227,15 +227,31 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Function to fetch data from Coinbase API
+        document.addEventListener('DOMContentLoaded', async function() {
+            const COINGECKO_API_BASE_URL = 'https://api.coingecko.com/api/v3';
+            const COINBASE_API_BASE_URL = 'https://api.exchange.coinbase.com';
+
+            // --- API Fetching Functions (Corrected Endpoints) ---
             async function fetchCandleData(product_id) {
-                const res = await fetch(`https://api.exchange.coinbase.com/products/${product_id}/candles?granularity=86400&limit=30`);
-                if (!res.ok) throw new Error("API fetch failed");
+                const res = await fetch(`${COINBASE_API_BASE_URL}/products/${product_id}/candles?granularity=86400&limit=30`);
+                if (!res.ok) throw new Error("Coinbase API fetch failed");
                 return res.json();
             }
 
-            // Function to fetch news
+            async function fetchPriceHistory(coinId = 'bitcoin', days = 200) {
+                const res = await fetch(`${COINGECKO_API_BASE_URL}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}&interval=daily`);
+                if (!res.ok) throw new Error("CoinGecko API fetch failed");
+                const data = await res.json();
+                return data.prices.map(p => p[1]);
+            }
+
+            async function fetchActiveAddresses() {
+                const res = await fetch(`${COINGECKO_API_BASE_URL}/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`);
+                if (!res.ok) throw new Error("CoinGecko API fetch failed");
+                const data = await res.json();
+                return data.market_data.active_addresses_24h.toLocaleString();
+            }
+
             async function fetchNews() {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=`;
                 const prompt = "Act as a seasoned financial news analyst. Generate a single recent news headline about the cryptocurrency market, a very brief summary (one sentence), and a short, 2-3 sentence analysis of its potential market impact. Use the current date for the headline. Ensure the analysis is neutral and focused on market signals. Provide the response as a JSON object with keys: 'headline', 'summary', 'analysis', and 'source'. The source should be a placeholder like 'Financial News Outlet'.";
@@ -246,7 +262,6 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                     });
-
                     if (!response.ok) throw new Error(`API fetch failed with status: ${response.status}`);
                     const result = await response.json();
                     const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -264,40 +279,27 @@
             }
 
 
-            // Function to process data for charts
+            // --- Utility Functions ---
             function processData(rawData) {
-                // Coinbase returns newest first, so reverse to have oldest first
                 return rawData.reverse().map(d => ({
                     date: new Date(d[0] * 1000),
                     price: parseFloat(d[4]),
-                    volume: parseFloat(d[5]),
-                    open: parseFloat(d[1]),
-                    high: parseFloat(d[2]),
-                    low: parseFloat(d[3]),
-                    close: parseFloat(d[4])
                 }));
             }
 
-            // Function to calculate the 200DMA (with placeholder data)
-            function calculate200DMA(data) {
-                const prices = data.map(d => d.price);
-                if (prices.length < 200) {
-                    return null;
-                }
-                const sum = prices.slice(0, 200).reduce((a, b) => a + b, 0);
-                return sum / 200;
+            function simpleMA(data) {
+                const sum = data.reduce((a, b) => a + b, 0);
+                return (sum / data.length).toFixed(2);
             }
-
+            
+            // --- Dashboard Creation Logic ---
             async function createDashboard() {
                 try {
-                    // Fetch data for both BTC and ETH
                     const btcRaw = await fetchCandleData('BTC-USD');
                     const ethRaw = await fetchCandleData('ETH-USD');
-                    
                     const btcData = processData(btcRaw);
                     const ethData = processData(ethRaw);
 
-                    // A hypothetical circulating supply for accurate market cap calculation
                     const btcSupply = 19780000;
                     const ethSupply = 120200000;
 
@@ -314,27 +316,24 @@
                     document.getElementById('low-cap').textContent = `$${(lowPrice * btcSupply / 1000000000000).toFixed(2)}T`;
                     document.getElementById('total-correction').textContent = `~${totalCorrection.toFixed(2)}%`;
 
-                    // New metrics
-                    document.getElementById('lth-ratio').textContent = `~65%`; // Placeholder data
-                    document.getElementById('active-addresses').textContent = `~850K`; // Placeholder data
-                    const dma200 = calculate200DMA(btcData);
-                    document.getElementById('dma200').textContent = dma200 ? `$${dma200.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'N/A';
+                    // New Dynamic metrics
+                    const ma200Prices = await fetchPriceHistory();
+                    const ma200 = simpleMA(ma200Prices);
+                    document.getElementById('dma200').textContent = `$${parseFloat(ma200).toLocaleString()}`;
+                    document.getElementById('active-addresses').textContent = await fetchActiveAddresses();
+                    document.getElementById('lth-ratio').textContent = `~65%`; // Static Placeholder
 
                     // Dynamic status text
                     const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
                     let analysisText = `Update as of **${currentDate}**: `;
-
-                    if (currentPrice > peakPrice * 0.95) { // within 5% of peak
-                        analysisText += `The market is showing **strong resilience**, with the current price just **${Math.abs(deviationFromPeak).toFixed(2)}%** below the recent peak.`;
-                    } else if (currentPrice > lowPrice * 1.5) { // more than 50% recovery
+                    if (currentPrice > peakPrice * 0.95) {
+                        analysisText += `The market shows **strong resilience**, with the current price just **${Math.abs(deviationFromPeak).toFixed(2)}%** below the recent peak.`;
+                    } else if (currentPrice > lowPrice * 1.5) {
                          analysisText += `The market is in a **significant recovery phase**. While down **${Math.abs(deviationFromPeak).toFixed(2)}%** from the peak, it has rebounded a staggering **+${deviationFromLow.toFixed(2)}%** from the correction low, signaling a potential reversal.`;
-                    } else { // still near the low
+                    } else {
                         analysisText += `The market remains **cautious and volatile**. The current price is down **${Math.abs(deviationFromPeak).toFixed(2)}%** from the recent peak, and a strong recovery has yet to materialize.`;
                     }
-
-                    // On-chain and technical analysis
-                    analysisText += ` The **Long-Term Holder Ratio** is high, suggesting investor conviction, while a price below the **200-day Moving Average** indicates the long-term trend remains bearish.`;
-
+                    analysisText += ` On-chain data indicates a high **Long-Term Holder Ratio**, suggesting investor conviction, while a price below the **200-day Moving Average** indicates the long-term trend remains bearish.`;
                     document.getElementById('dynamic-status').innerHTML = analysisText;
 
                     // --- Price Action Chart Logic ---
@@ -393,7 +392,6 @@
                     document.getElementById('show-btc').classList.add('bg-indigo-500', 'text-white');
                     document.getElementById('show-btc').classList.remove('bg-slate-700', 'text-slate-300');
 
-                    // Controller logic for the two assets
                     document.getElementById('show-btc').addEventListener('click', () => {
                         document.getElementById('btcChartContainer').style.display = 'block';
                         document.getElementById('ethChartContainer').style.display = 'none';
@@ -410,86 +408,6 @@
                         document.getElementById('show-eth').classList.add('bg-indigo-500', 'text-white');
                         document.getElementById('show-btc').classList.remove('bg-indigo-500', 'text-white');
                         document.getElementById('show-btc').classList.add('bg-slate-700', 'text-slate-300');
-                    });
-
-                    // --- A Tale of Two Downturns Chart Logic ---
-                    const declineCtx = document.getElementById('declineChart').getContext('2d');
-                    const contagionCtx = document.getElementById('contagionChart').getContext('2d');
-                    
-                    const contagionScore2022 = 0.85; 
-                    const decline2022 = 50; 
-                    const contagionScore2025 = 0.45;
-                    
-                    let declineChart = new Chart(declineCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: ['2022 Winter', 'August 2025'],
-                            datasets: [
-                                {
-                                    label: 'Total Market Cap Decline (%)',
-                                    data: [decline2022, totalCorrection.toFixed(2)],
-                                    backgroundColor: ['#f87171', '#f87171'],
-                                    hidden: false
-                                },
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' } }
-                            },
-                            plugins: {
-                                legend: { display: false }
-                            }
-                        }
-                    });
-
-                    let contagionChart = new Chart(contagionCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: ['2022 Winter', 'August 2025'],
-                            datasets: [
-                                {
-                                    label: 'Systemic Contagion Score',
-                                    data: [contagionScore2022, contagionScore2025],
-                                    backgroundColor: ['#60a5fa', '#60a5fa'],
-                                    hidden: false
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' } }
-                            },
-                            plugins: {
-                                legend: { display: false }
-                            }
-                        }
-                    });
-                    
-                    document.getElementById('declineChartContainer').style.display = 'block';
-                    document.getElementById('contagionChartContainer').style.display = 'none';
-
-                    // Controller logic for the two-downturns chart
-                    document.getElementById('show-decline').addEventListener('click', () => {
-                        document.getElementById('declineChartContainer').style.display = 'block';
-                        document.getElementById('contagionChartContainer').style.display = 'none';
-                        document.getElementById('show-decline').classList.remove('bg-slate-700', 'text-slate-300');
-                        document.getElementById('show-decline').classList.add('bg-indigo-500', 'text-white');
-                        document.getElementById('show-contagion').classList.remove('bg-indigo-500', 'text-white');
-                        document.getElementById('show-contagion').classList.add('bg-slate-700', 'text-slate-300');
-                    });
-                    
-                    document.getElementById('show-contagion').addEventListener('click', () => {
-                        document.getElementById('declineChartContainer').style.display = 'none';
-                        document.getElementById('contagionChartContainer').style.display = 'block';
-                        document.getElementById('show-contagion').classList.remove('bg-slate-700', 'text-slate-300');
-                        document.getElementById('show-contagion').classList.add('bg-indigo-500', 'text-white');
-                        document.getElementById('show-decline').classList.remove('bg-indigo-500', 'text-white');
-                        document.getElementById('show-decline').classList.add('bg-slate-700', 'text-slate-300');
                     });
                     
                 } catch (e) {
