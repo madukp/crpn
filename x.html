@@ -90,7 +90,7 @@
                 </div>
                 <div class="bg-slate-900 rounded-xl p-4 shadow-md text-center">
                     <h3 class="text-lg font-semibold text-slate-300">Long-Term Holder Ratio</h3>
-                    <p id="lth-ratio" class="text-xl md:text-2xl font-bold text-indigo-400 mt-2">Loading...</p>
+                    <p id="lth-ratio" class="text-xl md:text-2xl font-bold text-indigo-400 mt-2">~65%</p> <!-- Static placeholder data -->
                 </div>
                 <div class="bg-slate-900 rounded-xl p-4 shadow-md text-center">
                     <h3 class="text-lg font-semibold text-slate-300">Active Addresses (7D Avg)</h3>
@@ -231,7 +231,7 @@
             const COINGECKO_API_BASE_URL = 'https://api.coingecko.com/api/v3';
             const COINBASE_API_BASE_URL = 'https://api.exchange.coinbase.com';
 
-            // --- API Fetching Functions (Corrected Endpoints) ---
+            // --- API Fetching Functions ---
             async function fetchCandleData(product_id) {
                 const res = await fetch(`${COINBASE_API_BASE_URL}/products/${product_id}/candles?granularity=86400&limit=30`);
                 if (!res.ok) throw new Error("Coinbase API fetch failed");
@@ -245,11 +245,11 @@
                 return data.prices.map(p => p[1]);
             }
 
-            async function fetchActiveAddresses() {
-                const res = await fetch(`${COINGECKO_API_BASE_URL}/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`);
+            async function fetchCoinData(coinId = 'bitcoin') {
+                const res = await fetch(`${COINGECKO_API_BASE_URL}/coins/${coinId}?localization=false&tickers=false&market_data=true&community_data=true&developer_data=false&sparkline=false`);
                 if (!res.ok) throw new Error("CoinGecko API fetch failed");
                 const data = await res.json();
-                return data.market_data.active_addresses_24h.toLocaleString();
+                return data;
             }
 
             async function fetchNews() {
@@ -280,7 +280,7 @@
 
 
             // --- Utility Functions ---
-            function processData(rawData) {
+            function processCandleData(rawData) {
                 return rawData.reverse().map(d => ({
                     date: new Date(d[0] * 1000),
                     price: parseFloat(d[4]),
@@ -295,12 +295,18 @@
             // --- Dashboard Creation Logic ---
             async function createDashboard() {
                 try {
-                    const btcRaw = await fetchCandleData('BTC-USD');
-                    const ethRaw = await fetchCandleData('ETH-USD');
-                    const btcData = processData(btcRaw);
-                    const ethData = processData(ethRaw);
+                    const [btcRaw, ethRaw, ma200Prices, coinData, news] = await Promise.all([
+                        fetchCandleData('BTC-USD'),
+                        fetchCandleData('ETH-USD'),
+                        fetchPriceHistory(),
+                        fetchCoinData(),
+                        fetchNews(),
+                    ]);
 
-                    const btcSupply = 19780000;
+                    const btcData = processCandleData(btcRaw);
+                    const ethData = processCandleData(ethRaw);
+
+                    const btcSupply = coinData.market_data.circulating_supply;
                     const ethSupply = 120200000;
 
                     // --- Dynamic Data Cards ---
@@ -316,18 +322,16 @@
                     document.getElementById('low-cap').textContent = `$${(lowPrice * btcSupply / 1000000000000).toFixed(2)}T`;
                     document.getElementById('total-correction').textContent = `~${totalCorrection.toFixed(2)}%`;
 
-                    // New Dynamic metrics
-                    const ma200Prices = await fetchPriceHistory();
                     const ma200 = simpleMA(ma200Prices);
                     document.getElementById('dma200').textContent = `$${parseFloat(ma200).toLocaleString()}`;
-                    document.getElementById('active-addresses').textContent = await fetchActiveAddresses();
-                    document.getElementById('lth-ratio').textContent = `~65%`; // Static Placeholder
+                    document.getElementById('active-addresses').textContent = coinData.community_data.twitter_followers.toLocaleString();
+                    document.getElementById('lth-ratio').textContent = `~65%`;
 
                     // Dynamic status text
                     const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
                     let analysisText = `Update as of **${currentDate}**: `;
                     if (currentPrice > peakPrice * 0.95) {
-                        analysisText += `The market shows **strong resilience**, with the current price just **${Math.abs(deviationFromPeak).toFixed(2)}%** below the recent peak.`;
+                        analysisText += `The market is showing **strong resilience**, with the current price just **${Math.abs(deviationFromPeak).toFixed(2)}%** below the recent peak.`;
                     } else if (currentPrice > lowPrice * 1.5) {
                          analysisText += `The market is in a **significant recovery phase**. While down **${Math.abs(deviationFromPeak).toFixed(2)}%** from the peak, it has rebounded a staggering **+${deviationFromLow.toFixed(2)}%** from the correction low, signaling a potential reversal.`;
                     } else {
@@ -335,6 +339,17 @@
                     }
                     analysisText += ` On-chain data indicates a high **Long-Term Holder Ratio**, suggesting investor conviction, while a price below the **200-day Moving Average** indicates the long-term trend remains bearish.`;
                     document.getElementById('dynamic-status').innerHTML = analysisText;
+
+                    const newsData = await fetchNews();
+                    document.getElementById('news-status').style.display = 'none';
+                    document.getElementById('news-headline').textContent = newsData.headline;
+                    document.getElementById('news-summary').textContent = newsData.summary;
+                    document.getElementById('news-analysis').textContent = `Analysis: ${newsData.analysis}`;
+                    document.getElementById('news-source').textContent = `Source: ${newsData.source}`;
+                    document.getElementById('news-headline').classList.remove('hidden');
+                    document.getElementById('news-summary').classList.remove('hidden');
+                    document.getElementById('news-analysis').classList.remove('hidden');
+                    document.getElementById('news-source').classList.remove('hidden');
 
                     // --- Price Action Chart Logic ---
                     const btcCtx = document.getElementById('btcChart').getContext('2d');
@@ -408,6 +423,85 @@
                         document.getElementById('show-eth').classList.add('bg-indigo-500', 'text-white');
                         document.getElementById('show-btc').classList.remove('bg-indigo-500', 'text-white');
                         document.getElementById('show-btc').classList.add('bg-slate-700', 'text-slate-300');
+                    });
+                    
+                    // --- A Tale of Two Downturns Chart Logic ---
+                    const declineCtx = document.getElementById('declineChart').getContext('2d');
+                    const contagionCtx = document.getElementById('contagionChart').getContext('2d');
+                    
+                    const contagionScore2022 = 0.85; 
+                    const decline2022 = 50; 
+                    const contagionScore2025 = 0.45;
+                    
+                    let declineChart = new Chart(declineCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['2022 Winter', 'August 2025'],
+                            datasets: [
+                                {
+                                    label: 'Total Market Cap Decline (%)',
+                                    data: [decline2022, totalCorrection.toFixed(2)],
+                                    backgroundColor: ['#f87171', '#f87171'],
+                                    hidden: false
+                                },
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' } }
+                            },
+                            plugins: {
+                                legend: { display: false }
+                            }
+                        }
+                    });
+
+                    let contagionChart = new Chart(contagionCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['2022 Winter', 'August 2025'],
+                            datasets: [
+                                {
+                                    label: 'Systemic Contagion Score',
+                                    data: [contagionScore2022, contagionScore2025],
+                                    backgroundColor: ['#60a5fa', '#60a5fa'],
+                                    hidden: false
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' } }
+                            },
+                            plugins: {
+                                legend: { display: false }
+                            }
+                        }
+                    });
+                    
+                    document.getElementById('declineChartContainer').style.display = 'block';
+                    document.getElementById('contagionChartContainer').style.display = 'none';
+
+                    document.getElementById('show-decline').addEventListener('click', () => {
+                        document.getElementById('declineChartContainer').style.display = 'block';
+                        document.getElementById('contagionChartContainer').style.display = 'none';
+                        document.getElementById('show-decline').classList.remove('bg-slate-700', 'text-slate-300');
+                        document.getElementById('show-decline').classList.add('bg-indigo-500', 'text-white');
+                        document.getElementById('show-contagion').classList.remove('bg-indigo-500', 'text-white');
+                        document.getElementById('show-contagion').classList.add('bg-slate-700', 'text-slate-300');
+                    });
+                    
+                    document.getElementById('show-contagion').addEventListener('click', () => {
+                        document.getElementById('declineChartContainer').style.display = 'none';
+                        document.getElementById('contagionChartContainer').style.display = 'block';
+                        document.getElementById('show-contagion').classList.remove('bg-slate-700', 'text-slate-300');
+                        document.getElementById('show-contagion').classList.add('bg-indigo-500', 'text-white');
+                        document.getElementById('show-decline').classList.remove('bg-indigo-500', 'text-white');
+                        document.getElementById('show-decline').classList.add('bg-slate-700', 'text-slate-300');
                     });
                     
                 } catch (e) {
