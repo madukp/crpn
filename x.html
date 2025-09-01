@@ -75,7 +75,7 @@
                 </p>
                 <p id="dynamic-status" class="text-slate-400 text-sm mt-4 italic">Loading current status...</p>
             </div>
-            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 <div class="bg-slate-900 rounded-xl p-4 shadow-md text-center">
                     <h3 class="text-lg font-semibold text-slate-300">Peak Market Cap</h3>
                     <p id="peak-cap" class="text-xl md:text-2xl font-bold text-green-500 mt-2">Loading...</p>
@@ -91,10 +91,6 @@
                 <div class="bg-slate-900 rounded-xl p-4 shadow-md text-center">
                     <h3 class="text-lg font-semibold text-slate-300">Long-Term Holder Ratio</h3>
                     <p id="lth-ratio" class="text-xl md:text-2xl font-bold text-indigo-400 mt-2">~65%</p> <!-- Static placeholder data -->
-                </div>
-                <div class="bg-slate-900 rounded-xl p-4 shadow-md text-center">
-                    <h3 class="text-lg font-semibold text-slate-300">Active Addresses (7D Avg)</h3>
-                    <p id="active-addresses" class="text-xl md:text-2xl font-bold text-indigo-400 mt-2">Loading...</p>
                 </div>
                 <div class="bg-slate-900 rounded-xl p-4 shadow-md text-center">
                     <h3 class="text-lg font-semibold text-slate-300">200-Day Moving Average</h3>
@@ -324,7 +320,6 @@
 
                     const ma200 = simpleMA(ma200Prices);
                     document.getElementById('dma200').textContent = `$${parseFloat(ma200).toLocaleString()}`;
-                    document.getElementById('active-addresses').textContent = coinData.community_data.twitter_followers.toLocaleString();
                     document.getElementById('lth-ratio').textContent = `~65%`;
 
                     // Dynamic status text
